@@ -24,8 +24,33 @@ class Exercise {
 
   final String id;
   final String nome;
+
+  /// Todos os grupos juntos num texto só, separados por vírgula
+  /// (ex.: "Peito, Tríceps"). É assim que fica guardado no banco.
   final String grupoMuscular;
   final String? descricao;
+
+  /// Os grupos separados, em lista (ex.: ["Peito", "Tríceps"]).
+  List<String> get grupos => separarGrupos(grupoMuscular);
+
+  /// Junta uma lista de grupos no texto que vai para o banco.
+  /// Os grupos padrão saem sempre na mesma ordem da lista [gruposMusculares];
+  /// grupos antigos que não estão nela vão no final.
+  static String juntarGrupos(Iterable<String> grupos) {
+    final unicos = grupos.map((g) => g.trim()).where((g) => g.isNotEmpty).toSet();
+    final padrao = gruposMusculares.where(unicos.contains);
+    final outros = unicos.where((g) => !gruposMusculares.contains(g));
+    return [...padrao, ...outros].join(', ');
+  }
+
+  /// Faz o caminho inverso: "Peito, Tríceps" -> ["Peito", "Tríceps"].
+  static List<String> separarGrupos(String texto) {
+    return texto
+        .split(',')
+        .map((g) => g.trim())
+        .where((g) => g.isNotEmpty)
+        .toList();
+  }
 
   factory Exercise.fromMap(Map<String, dynamic> map) {
     return Exercise(

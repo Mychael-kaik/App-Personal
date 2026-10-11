@@ -10,10 +10,23 @@ const List<String> nomesDosDias = [
   'Sábado',
 ];
 
+/// Versão curta, para botões pequenos (ex.: "Seg").
+const List<String> nomesCurtosDosDias = [
+  'Dom',
+  'Seg',
+  'Ter',
+  'Qua',
+  'Qui',
+  'Sex',
+  'Sáb',
+];
+
 /// Ordem para MOSTRAR na tela: a semana começa na segunda-feira.
 const List<int> ordemDaSemana = [1, 2, 3, 4, 5, 6, 0];
 
 String nomeDoDia(int dia) => nomesDosDias[dia];
+
+String nomeCurtoDoDia(int dia) => nomesCurtosDosDias[dia];
 
 /// Dia de hoje no formato do banco (domingo = 0).
 /// O Dart usa DateTime.weekday com segunda = 1 ... domingo = 7,

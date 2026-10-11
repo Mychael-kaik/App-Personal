@@ -66,12 +66,14 @@ class _ExercisesTabState extends ConsumerState<ExercisesTab> {
           );
         }
 
-        final grupos = lista.map((e) => e.grupoMuscular).toSet().toList()..sort();
+        // Cada exercício pode ter vários grupos: o filtro lista cada grupo
+        // uma única vez e mostra todo exercício que tenha aquele grupo.
+        final grupos = lista.expand((e) => e.grupos).toSet().toList()..sort();
         // Se o grupo filtrado deixou de existir (ex.: excluímos o último), volta para "Todos".
         final grupoAtivo = grupos.contains(_grupo) ? _grupo : null;
         final filtrados = grupoAtivo == null
             ? lista
-            : lista.where((e) => e.grupoMuscular == grupoAtivo).toList();
+            : lista.where((e) => e.grupos.contains(grupoAtivo)).toList();
 
         return Column(
           children: [

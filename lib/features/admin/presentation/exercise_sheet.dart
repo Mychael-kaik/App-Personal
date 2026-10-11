@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/mensagens.dart';
 import '../../../core/validators.dart';
-import '../../../core/widgets/picker_field.dart';
 import '../data/admin_providers.dart';
 import '../domain/exercise.dart';
 
@@ -34,7 +33,11 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nomeCtrl;
   late final TextEditingController _descricaoCtrl;
-  String? _grupo;
+  // Grupos escolhidos (pode ser mais de um).
+  List<String> _grupos = [];
+  // Opções mostradas: os grupos padrão + algum grupo antigo que o exercício
+  // já tinha e que não está na lista padrão (assim ele não se perde).
+  late final List<String> _opcoes;
   bool _salvando = false;
   String? _erro;
 
@@ -46,7 +49,11 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
     final e = widget.exercicio;
     _nomeCtrl = TextEditingController(text: e?.nome ?? '');
     _descricaoCtrl = TextEditingController(text: e?.descricao ?? '');
-    _grupo = e?.grupoMuscular;
+    _grupos = e?.grupos ?? [];
+    _opcoes = [
+      ...gruposMusculares,
+      ..._grupos.where((g) => !gruposMusculares.contains(g)),
+    ];
   }
 
   @override
@@ -70,18 +77,20 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
     final descricao =
         _descricaoCtrl.text.trim().isEmpty ? null : _descricaoCtrl.text.trim();
 
+    final grupoMuscular = Exercise.juntarGrupos(_grupos);
+
     try {
       if (_editando) {
         await repo.atualizarExercicio(
           widget.exercicio!.id,
           nome: nome,
-          grupoMuscular: _grupo!,
+          grupoMuscular: grupoMuscular,
           descricao: descricao,
         );
       } else {
         await repo.criarExercicio(
           nome: nome,
-          grupoMuscular: _grupo!,
+          grupoMuscular: grupoMuscular,
           descricao: descricao,
         );
       }
@@ -97,12 +106,6 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
-
-    // Se o exercício já tinha um grupo que não está na lista padrão, mantemos.
-    final grupos = [
-      ...gruposMusculares,
-      if (_grupo != null && !gruposMusculares.contains(_grupo)) _grupo!,
-    ];
 
     return Padding(
       // Sobe a folha quando o teclado abre.
@@ -137,13 +140,64 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
                 validator: (v) => Validators.nome(v, campo: 'O nome'),
               ),
               const SizedBox(height: 16),
-              PickerField<String>(
-                rotulo: 'Grupo muscular',
-                opcoes: grupos,
-                rotuloDe: (g) => g,
-                valorInicial: _grupo,
-                onChanged: (g) => _grupo = g,
-                validator: (v) => v == null ? 'Escolha o grupo muscular.' : null,
+              // Seleção múltipla: cada botão liga/desliga um grupo.
+              FormField<List<String>>(
+                initialValue: _grupos,
+                validator: (v) => (v == null || v.isEmpty)
+                    ? 'Escolha pelo menos um grupo muscular.'
+                    : null,
+                builder: (campo) {
+                  final escolhidos = campo.value ?? <String>[];
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Grupos musculares',
+                        style: tema.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        'Toque para escolher um ou mais.',
+                        style: tema.textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          for (final g in _opcoes)
+                            FilterChip(
+                              label: Text(g, style: const TextStyle(fontSize: 15)),
+                              selected: escolhidos.contains(g),
+                              onSelected: _salvando
+                                  ? null
+                                  : (marcado) {
+                                      final novo = [...escolhidos];
+                                      if (marcado) {
+                                        novo.add(g);
+                                      } else {
+                                        novo.remove(g);
+                                      }
+                                      _grupos = novo;
+                                      campo.didChange(novo);
+                                    },
+                            ),
+                        ],
+                      ),
+                      if (campo.hasError)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6, left: 4),
+                          child: Text(
+                            campo.errorText!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: tema.colorScheme.error,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 16),
               TextFormField(
