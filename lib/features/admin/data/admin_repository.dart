@@ -89,6 +89,29 @@ class AdminRepository {
     await _client.from('profiles').update({'ativo': ativo}).eq('id', id);
   }
 
+  /// Define uma NOVA senha para o aluno, chamando a Edge Function
+  /// `admin-reset-student-password` (roda no servidor, confere se quem chamou é
+  /// admin e só aceita alunos). A senha antiga deixa de valer na hora.
+  Future<void> redefinirSenha({
+    required String alunoId,
+    required String senha,
+  }) async {
+    final token = _client.auth.currentSession?.accessToken;
+    if (token == null) {
+      throw const AppException('Sua sessão expirou. Entre novamente.');
+    }
+
+    final resposta = await _client.functions.invoke(
+      'admin-reset-student-password',
+      headers: {'Authorization': 'Bearer $token'},
+      body: {'aluno_id': alunoId, 'senha': senha},
+    );
+    final dados = resposta.data;
+    if (dados is Map && dados['error'] is String) {
+      throw AppException(dados['error'] as String);
+    }
+  }
+
   // ===================================================================
   // EXERCÍCIOS
   // ===================================================================

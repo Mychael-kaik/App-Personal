@@ -12,6 +12,7 @@ import '../../auth/domain/profile.dart';
 import '../data/admin_providers.dart';
 import '../domain/workout.dart';
 import 'duplicate_workout_dialog.dart';
+import 'reset_password_dialog.dart';
 
 /// Detalhe de um aluno: dados, ativar/desativar e os 7 dias da semana,
 /// cada um com seu treino (ou o botão "Montar").
@@ -155,6 +156,15 @@ class _Conteudo extends ConsumerWidget {
                         ),
                         value: aluno.ativo,
                         onChanged: (v) => _alternarAtivo(context, ref, v),
+                      ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: OutlinedButton.icon(
+                          style: compactoContorno(),
+                          onPressed: () => abrirRedefinirSenha(context, aluno),
+                          icon: const Icon(Icons.lock_reset),
+                          label: const Text('Redefinir senha'),
+                        ),
                       ),
                     ],
                   ),

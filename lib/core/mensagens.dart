@@ -31,7 +31,7 @@ String mensagemDeErro(Object erro) {
       return detalhes['error'] as String;
     }
     if (erro.status == 404) {
-      return 'A função de cadastro ainda não foi publicada no Supabase.';
+      return 'Esta função ainda não foi publicada no Supabase (Edge Functions).';
     }
     return 'Não foi possível concluir a operação. Tente novamente.';
   }
