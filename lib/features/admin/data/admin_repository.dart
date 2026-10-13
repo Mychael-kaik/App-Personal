@@ -1,3 +1,6 @@
+import 'dart:math';
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/app_exception.dart';
@@ -129,11 +132,13 @@ class AdminRepository {
     required String nome,
     required String grupoMuscular,
     String? descricao,
+    String? fotoPath,
   }) async {
     await _client.from('exercises').insert({
       'nome': nome,
       'grupo_muscular': grupoMuscular,
       'descricao': descricao,
+      'foto_path': fotoPath,
     });
   }
 
@@ -142,12 +147,46 @@ class AdminRepository {
     required String nome,
     required String grupoMuscular,
     String? descricao,
+    String? fotoPath,
   }) async {
     await _client.from('exercises').update({
       'nome': nome,
       'grupo_muscular': grupoMuscular,
       'descricao': descricao,
+      'foto_path': fotoPath,
     }).eq('id', id);
+  }
+
+  /// Envia a foto para o Storage (bucket privado `exercicios`) e devolve o
+  /// caminho a guardar em `exercises.foto_path`.
+  /// Cada envio usa um nome NOVO, então trocar a foto nunca mostra a antiga
+  /// guardada em cache. Quem barra alunos é o RLS do Storage (só admin envia).
+  Future<String> enviarFoto({
+    required Uint8List bytes,
+    required String contentType,
+  }) async {
+    final extensao = switch (contentType) {
+      'image/png' => 'png',
+      'image/webp' => 'webp',
+      _ => 'jpg',
+    };
+    final nome =
+        '${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(1 << 30)}';
+    final caminho = 'fotos/$nome.$extensao';
+    await _client.storage.from('exercicios').uploadBinary(
+          caminho,
+          bytes,
+          fileOptions: FileOptions(contentType: contentType),
+        );
+    return caminho;
+  }
+
+  /// Apaga uma foto do Storage. Se falhar, ignora: sobrar um arquivo
+  /// esquecido não atrapalha o app.
+  Future<void> removerFoto(String caminho) async {
+    try {
+      await _client.storage.from('exercicios').remove([caminho]);
+    } catch (_) {}
   }
 
   Future<void> removerExercicio(String id) async {
@@ -175,8 +214,9 @@ class AdminRepository {
         .select(
           'id, aluno_id, dia_da_semana, titulo, '
           'workout_items(id, workout_id, exercise_id, series, repeticoes, '
-          'tempo_segundos, carga, observacao, ordem, '
-          'exercises(nome, grupo_muscular))',
+          'tempo_segundos, descanso_serie_segundos, descanso_segundos, '
+          'carga, observacao, ordem, '
+          'exercises(nome, grupo_muscular, descricao, foto_path))',
         )
         .eq('aluno_id', alunoId)
         .order('dia_da_semana', ascending: true);

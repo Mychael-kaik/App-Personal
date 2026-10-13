@@ -31,8 +31,9 @@ class StudentRepository {
         .select(
           'id, aluno_id, dia_da_semana, titulo, '
           'workout_items(id, workout_id, exercise_id, series, repeticoes, '
-          'tempo_segundos, carga, observacao, ordem, '
-          'exercises(nome, grupo_muscular))',
+          'tempo_segundos, descanso_serie_segundos, descanso_segundos, '
+          'carga, observacao, ordem, '
+          'exercises(nome, grupo_muscular, descricao, foto_path))',
         )
         .eq('aluno_id', _meuId)
         .order('dia_da_semana', ascending: true);

@@ -36,6 +36,16 @@ String mensagemDeErro(Object erro) {
     return 'Não foi possível concluir a operação. Tente novamente.';
   }
 
+  if (erro is StorageException) {
+    if ('${erro.statusCode}' == '413') {
+      return 'A foto é grande demais (máximo 2 MB).';
+    }
+    if ('${erro.statusCode}' == '403' || '${erro.statusCode}' == '401') {
+      return 'Você não tem permissão para enviar fotos.';
+    }
+    return 'Não foi possível enviar a foto. Tente novamente.';
+  }
+
   if (erro is AuthException) {
     return 'Sua sessão expirou. Entre novamente.';
   }

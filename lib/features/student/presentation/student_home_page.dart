@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/dia_semana.dart';
 import '../../../core/formatters.dart';
 import '../../../core/mensagens.dart';
+import '../../../core/rotas.dart';
 import '../../../core/widgets/estados.dart';
 import '../../admin/domain/workout.dart';
 import '../../auth/presentation/auth_controller.dart';
@@ -204,23 +206,6 @@ class _TreinoDoDia extends ConsumerWidget {
   final int dia;
   final bool ehHoje;
 
-  Future<void> _alternar(
-    BuildContext context,
-    WidgetRef ref,
-    String itemId,
-    bool concluido,
-  ) async {
-    try {
-      await ref
-          .read(conclusoesDeHojeProvider.notifier)
-          .alternar(itemId, concluido);
-    } catch (e) {
-      if (context.mounted) {
-        mostrarMensagem(context, mensagemDeErro(e), erro: true);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tema = Theme.of(context);
@@ -265,8 +250,6 @@ class _TreinoDoDia extends ConsumerWidget {
     // ---- Com treino ----
     final conclusoes = ref.watch(conclusoesDeHojeProvider);
     final concluidos = conclusoes.value ?? <String>{};
-    // Só dá para marcar no dia de hoje e depois que as marcações carregaram.
-    final podeMarcar = ehHoje && conclusoes.hasValue;
     final total = treino.itens.length;
     final feitos = treino.itens.where((i) => concluidos.contains(i.id)).length;
 
@@ -330,10 +313,18 @@ class _TreinoDoDia extends ConsumerWidget {
         if (!ehHoje)
           _Aviso(
             icone: Icons.info_outline,
-            texto: 'Este é o treino de outro dia. Você marca os exercícios '
-                'como concluídos no próprio dia do treino.',
+            texto: 'Este é o treino de outro dia. Toque num exercício para ver '
+                'os detalhes. Você conclui no próprio dia do treino.',
             fundo: cores.secondaryContainer,
             corDoTexto: cores.onSecondaryContainer,
+          ),
+        if (ehHoje && feitos < total)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10, left: 4),
+            child: Text(
+              'Toque em um exercício para ver como fazer e concluir.',
+              style: tema.textTheme.bodyMedium,
+            ),
           ),
         if (ehHoje && conclusoes.hasError)
           _Aviso(
@@ -351,9 +342,8 @@ class _TreinoDoDia extends ConsumerWidget {
             posicao: i + 1,
             item: treino.itens[i],
             concluido: concluidos.contains(treino.itens[i].id),
-            podeMarcar: podeMarcar,
-            onAlternar: (valor) =>
-                _alternar(context, ref, treino.itens[i].id!, valor),
+            ehHoje: ehHoje,
+            onAbrir: () => context.push(Rotas.exercicio(treino.itens[i].id!)),
           ),
       ],
     );
@@ -389,13 +379,13 @@ class _Aviso extends StatelessWidget {
         children: [
           Icon(icone, color: corDoTexto),
           const SizedBox(width: 12),
-                    Expanded(
+          Expanded(
             child: Text(
               texto,
               style: TextStyle(fontSize: 15, color: corDoTexto),
             ),
           ),
-          ?acao,
+          if (acao != null) acao!,
         ],
       ),
     );

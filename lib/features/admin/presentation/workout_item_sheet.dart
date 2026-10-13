@@ -40,6 +40,8 @@ class _WorkoutItemSheetState extends ConsumerState<WorkoutItemSheet> {
   late final TextEditingController _seriesCtrl;
   late final TextEditingController _repsCtrl;
   late final TextEditingController _tempoCtrl;
+  late final TextEditingController _descSerieCtrl;
+  late final TextEditingController _descFinalCtrl;
   late final TextEditingController _cargaCtrl;
   late final TextEditingController _obsCtrl;
 
@@ -56,6 +58,10 @@ class _WorkoutItemSheetState extends ConsumerState<WorkoutItemSheet> {
     _seriesCtrl = TextEditingController(text: i != null ? '${i.series}' : '3');
     _repsCtrl = TextEditingController(text: i?.repeticoes?.toString() ?? '');
     _tempoCtrl = TextEditingController(text: i?.tempoSegundos?.toString() ?? '');
+    _descSerieCtrl =
+        TextEditingController(text: i?.descansoSerieSegundos?.toString() ?? '');
+    _descFinalCtrl =
+        TextEditingController(text: i?.descansoSegundos?.toString() ?? '');
     _cargaCtrl = TextEditingController(
       text: i?.carga == null ? '' : _formatarParaCampo(i!.carga!),
     );
@@ -70,6 +76,8 @@ class _WorkoutItemSheetState extends ConsumerState<WorkoutItemSheet> {
     _seriesCtrl.dispose();
     _repsCtrl.dispose();
     _tempoCtrl.dispose();
+    _descSerieCtrl.dispose();
+    _descFinalCtrl.dispose();
     _cargaCtrl.dispose();
     _obsCtrl.dispose();
     super.dispose();
@@ -106,6 +114,8 @@ class _WorkoutItemSheetState extends ConsumerState<WorkoutItemSheet> {
       series: int.parse(_seriesCtrl.text.trim()),
       repeticoes: int.tryParse(_repsCtrl.text.trim()),
       tempoSegundos: int.tryParse(_tempoCtrl.text.trim()),
+      descansoSerieSegundos: int.tryParse(_descSerieCtrl.text.trim()),
+      descansoSegundos: int.tryParse(_descFinalCtrl.text.trim()),
       carga: carga == null ? null : double.parse(carga.toStringAsFixed(2)),
       observacao: obs.isEmpty ? null : obs,
     );
@@ -251,7 +261,7 @@ class _WorkoutItemSheetState extends ConsumerState<WorkoutItemSheet> {
                   decoration: _decoracao(
                     'Tempo',
                     sufixo: 'seg',
-                    ajuda: 'Duração ou descanso',
+                    ajuda: 'Duração (ex.: prancha)',
                   ),
                   validator: (v) =>
                       Validators.inteiro(
@@ -287,18 +297,68 @@ class _WorkoutItemSheetState extends ConsumerState<WorkoutItemSheet> {
             ],
           ),
           const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _descSerieCtrl,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  textInputAction: TextInputAction.next,
+                  style: const TextStyle(fontSize: 17),
+                  decoration: _decoracao(
+                    'Descanso entre séries',
+                    sufixo: 'seg',
+                    ajuda: 'Ex.: 30. Vazio = sem',
+                  ),
+                  validator: (v) => Validators.inteiro(
+                    v,
+                    campo: 'O descanso',
+                    min: 1,
+                    max: 3600,
+                    obrigatorio: false,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _descFinalCtrl,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  textInputAction: TextInputAction.next,
+                  style: const TextStyle(fontSize: 17),
+                  decoration: _decoracao(
+                    'Descanso ao final',
+                    sufixo: 'seg',
+                    ajuda: 'Ex.: 120. Vazio = sem',
+                  ),
+                  validator: (v) => Validators.inteiro(
+                    v,
+                    campo: 'O descanso',
+                    min: 1,
+                    max: 3600,
+                    obrigatorio: false,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           TextFormField(
             controller: _obsCtrl,
-            minLines: 2,
-            maxLines: 3,
-            maxLength: 200,
+            minLines: 4,
+            maxLines: 8,
+            maxLength: 600,
             textCapitalization: TextCapitalization.sentences,
             style: const TextStyle(fontSize: 17),
             decoration: _decoracao(
-              'Observação (opcional)',
-              ajuda: 'Ex.: cadência lenta, drop-set na última série.',
+              'Orientações para o aluno (opcional)',
+              ajuda: 'Como fazer o exercício e para que ele serve. '
+                  'O aluno lê isso na tela do exercício.',
             ),
-            validator: (v) => Validators.tamanhoMaximo(v, 200),
+            validator: (v) => Validators.tamanhoMaximo(v, 600),
           ),
           const SizedBox(height: 16),
           FilledButton(

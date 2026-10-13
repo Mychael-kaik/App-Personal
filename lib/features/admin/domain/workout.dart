@@ -11,9 +11,13 @@ class WorkoutItem {
     required this.series,
     this.repeticoes,
     this.tempoSegundos,
+    this.descansoSerieSegundos,
+    this.descansoSegundos,
     this.carga,
     this.observacao,
     this.ordem = 0,
+    this.exercicioDescricao,
+    this.fotoPath,
   });
 
   /// null enquanto o item ainda não foi salvo no banco.
@@ -24,9 +28,19 @@ class WorkoutItem {
   final int series;
   final int? repeticoes;
   final int? tempoSegundos;
+
+  /// Descanso entre uma série e outra (segundos). null/0 = sem cronômetro.
+  final int? descansoSerieSegundos;
+
+  /// Descanso ao terminar o exercício todo (segundos). null/0 = sem cronômetro.
+  final int? descansoSegundos;
   final double? carga;
   final String? observacao;
   final int ordem;
+
+  /// Texto geral do exercício (biblioteca) e caminho da foto de exemplo.
+  final String? exercicioDescricao;
+  final String? fotoPath;
 
   /// O Supabase devolve o item com o exercício "embutido":
   /// { id, series, ..., exercises: { nome, grupo_muscular } }
@@ -40,9 +54,13 @@ class WorkoutItem {
       series: (map['series'] as num).toInt(),
       repeticoes: (map['repeticoes'] as num?)?.toInt(),
       tempoSegundos: (map['tempo_segundos'] as num?)?.toInt(),
+      descansoSerieSegundos: (map['descanso_serie_segundos'] as num?)?.toInt(),
+      descansoSegundos: (map['descanso_segundos'] as num?)?.toInt(),
       carga: (map['carga'] as num?)?.toDouble(),
       observacao: map['observacao'] as String?,
       ordem: (map['ordem'] as num).toInt(),
+      exercicioDescricao: exercicio?['descricao'] as String?,
+      fotoPath: exercicio?['foto_path'] as String?,
     );
   }
 
@@ -54,6 +72,8 @@ class WorkoutItem {
         'series': series,
         'repeticoes': repeticoes,
         'tempo_segundos': tempoSegundos,
+        'descanso_serie_segundos': descansoSerieSegundos,
+        'descanso_segundos': descansoSegundos,
         'carga': carga,
         'observacao': observacao,
       };

@@ -7,6 +7,9 @@ class Rotas {
   static const admin = '/admin';
   static const aluno = '/aluno';
 
+  // Tela do exercício do aluno (começa com /aluno: protegida pela mesma regra).
+  static String exercicio(String itemId) => '/aluno/exercicio/$itemId';
+
   // Telas internas do admin (todas começam com /admin, então ficam
   // protegidas pela mesma regra de redirecionamento).
   static const alunoNovo = '/admin/aluno/novo';

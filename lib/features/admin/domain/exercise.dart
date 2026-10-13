@@ -20,6 +20,7 @@ class Exercise {
     required this.nome,
     required this.grupoMuscular,
     this.descricao,
+    this.fotoPath,
   });
 
   final String id;
@@ -29,6 +30,9 @@ class Exercise {
   /// (ex.: "Peito, Tríceps"). É assim que fica guardado no banco.
   final String grupoMuscular;
   final String? descricao;
+
+  /// Caminho da foto no Storage (bucket `exercicios`). null = sem foto.
+  final String? fotoPath;
 
   /// Os grupos separados, em lista (ex.: ["Peito", "Tríceps"]).
   List<String> get grupos => separarGrupos(grupoMuscular);
@@ -58,6 +62,7 @@ class Exercise {
       nome: map['nome'] as String,
       grupoMuscular: map['grupo_muscular'] as String,
       descricao: map['descricao'] as String?,
+      fotoPath: map['foto_path'] as String?,
     );
   }
 

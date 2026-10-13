@@ -1,8 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../core/estilos.dart';
 import '../../../core/mensagens.dart';
 import '../../../core/validators.dart';
+import '../../../core/widgets/foto_exercicio.dart';
 import '../data/admin_providers.dart';
 import '../domain/exercise.dart';
 
@@ -41,6 +46,13 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
   bool _salvando = false;
   String? _erro;
 
+  // Foto: a que já está salva, a nova escolhida (ainda não enviada) e se o
+  // admin pediu para tirar a foto.
+  String? _fotoAtual;
+  Uint8List? _fotoNova;
+  String _fotoNovaTipo = 'image/jpeg';
+  bool _tirarFoto = false;
+
   bool get _editando => widget.exercicio != null;
 
   @override
@@ -50,6 +62,7 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
     _nomeCtrl = TextEditingController(text: e?.nome ?? '');
     _descricaoCtrl = TextEditingController(text: e?.descricao ?? '');
     _grupos = e?.grupos ?? [];
+    _fotoAtual = e?.fotoPath;
     _opcoes = [
       ...gruposMusculares,
       ..._grupos.where((g) => !gruposMusculares.contains(g)),
@@ -61,6 +74,56 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
     _nomeCtrl.dispose();
     _descricaoCtrl.dispose();
     super.dispose();
+  }
+
+  static const _tiposAceitos = {'image/jpeg', 'image/png', 'image/webp'};
+  static const _limiteBytes = 2 * 1024 * 1024; // 2 MB (igual ao do bucket)
+
+  Future<void> _escolherFoto() async {
+    try {
+      // Reduz a foto (até 1280 px) e comprime: fica bem abaixo de 2 MB.
+      final arquivo = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1280,
+        maxHeight: 1280,
+        imageQuality: 82,
+      );
+      if (arquivo == null) return; // cancelou
+      final bytes = await arquivo.readAsBytes();
+      final tipo = _tipoDaImagem(arquivo.mimeType, arquivo.name);
+      if (!mounted) return;
+      if (tipo == null) {
+        mostrarMensagem(context, 'Use uma foto JPG, PNG ou WebP.', erro: true);
+        return;
+      }
+      if (bytes.length > _limiteBytes) {
+        mostrarMensagem(
+          context,
+          'A foto é grande demais (máximo 2 MB). Escolha outra.',
+          erro: true,
+        );
+        return;
+      }
+      setState(() {
+        _fotoNova = bytes;
+        _fotoNovaTipo = tipo;
+        _tirarFoto = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        mostrarMensagem(context, 'Não foi possível abrir a foto.', erro: true);
+      }
+    }
+  }
+
+  /// Descobre o tipo da imagem pelo tipo informado ou pela extensão.
+  String? _tipoDaImagem(String? mime, String nome) {
+    if (mime != null && _tiposAceitos.contains(mime)) return mime;
+    final n = nome.toLowerCase();
+    if (n.endsWith('.jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
+    if (n.endsWith('.png')) return 'image/png';
+    if (n.endsWith('.webp')) return 'image/webp';
+    return null;
   }
 
   Future<void> _salvar() async {
@@ -79,28 +142,113 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
 
     final grupoMuscular = Exercise.juntarGrupos(_grupos);
 
+    String? enviada; // foto nova já enviada ao Storage
+    var gravou = false;
     try {
+      if (_fotoNova != null) {
+        enviada = await repo.enviarFoto(
+          bytes: _fotoNova!,
+          contentType: _fotoNovaTipo,
+        );
+      }
+      final fotoFinal = enviada ?? (_tirarFoto ? null : _fotoAtual);
+
       if (_editando) {
         await repo.atualizarExercicio(
           widget.exercicio!.id,
           nome: nome,
           grupoMuscular: grupoMuscular,
           descricao: descricao,
+          fotoPath: fotoFinal,
         );
       } else {
         await repo.criarExercicio(
           nome: nome,
           grupoMuscular: grupoMuscular,
           descricao: descricao,
+          fotoPath: fotoFinal,
         );
+      }
+      gravou = true;
+
+      // Só agora que o banco apontou para a foto nova é seguro apagar a antiga.
+      if (_fotoAtual != null && fotoFinal != _fotoAtual) {
+        await repo.removerFoto(_fotoAtual!);
       }
       ref.invalidate(exerciciosProvider);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
+      // Falhou ao gravar: não deixa a foto nova "órfã" no Storage.
+      if (!gravou && enviada != null) await repo.removerFoto(enviada);
       if (mounted) setState(() => _erro = mensagemDeErro(e));
     } finally {
       if (mounted) setState(() => _salvando = false);
     }
+  }
+
+  /// Foto de exemplo do exercício: mostra a atual/nova e os botões.
+  Widget _campoFoto(ThemeData tema) {
+    final temFoto = _fotoNova != null || (_fotoAtual != null && !_tirarFoto);
+
+    Widget imagem;
+    if (_fotoNova != null) {
+      imagem = ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: AspectRatio(
+          aspectRatio: 4 / 3,
+          child: Image.memory(_fotoNova!, fit: BoxFit.cover),
+        ),
+      );
+    } else if (_fotoAtual != null && !_tirarFoto) {
+      imagem = FotoExercicio(caminho: _fotoAtual!);
+    } else {
+      imagem = const SemFoto();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Foto de exemplo',
+          style:
+              tema.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        Text(
+          'Aparece para o aluno na tela do exercício. JPG, PNG ou WebP, até 2 MB.',
+          style: tema.textTheme.bodySmall,
+        ),
+        const SizedBox(height: 8),
+        imagem,
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              style: compactoContorno(),
+              onPressed: _salvando ? null : _escolherFoto,
+              icon: const Icon(Icons.add_photo_alternate_outlined),
+              label: Text(temFoto ? 'Trocar foto' : 'Escolher foto'),
+            ),
+            if (temFoto)
+              TextButton.icon(
+                onPressed: _salvando
+                    ? null
+                    : () => setState(() {
+                          if (_fotoNova != null) {
+                            // Só descarta a foto recém-escolhida.
+                            _fotoNova = null;
+                          } else {
+                            _tirarFoto = true;
+                          }
+                        }),
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Remover foto'),
+              ),
+          ],
+        ),
+      ],
+    );
   }
 
   @override
@@ -199,6 +347,8 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
                   );
                 },
               ),
+              const SizedBox(height: 16),
+              _campoFoto(tema),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _descricaoCtrl,

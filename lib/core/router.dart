@@ -10,6 +10,7 @@ import '../features/auth/domain/profile.dart';
 import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/splash_page.dart';
+import '../features/student/presentation/exercise_detail_page.dart';
 import '../features/student/presentation/student_home_page.dart';
 import 'rotas.dart';
 
@@ -111,6 +112,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Rotas.aluno,
         builder: (context, state) => const StudentHomePage(),
+        routes: [
+          GoRoute(
+            path: 'exercicio/:itemId',
+            builder: (context, state) =>
+                ExerciseDetailPage(itemId: state.pathParameters['itemId']!),
+          ),
+        ],
       ),
     ],
   );

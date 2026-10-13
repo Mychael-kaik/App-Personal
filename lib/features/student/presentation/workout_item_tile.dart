@@ -4,16 +4,17 @@ import '../../admin/domain/workout.dart';
 
 /// Cartão de UM exercício do treino do aluno.
 ///
-/// O cartão inteiro é um botão grande: tocar em qualquer lugar dele marca
-/// ou desmarca o exercício como concluído.
+/// O cartão inteiro é um botão grande: tocar em qualquer lugar dele abre a
+/// tela do exercício (foto, orientações, séries e descanso). É lá que o
+/// aluno marca o exercício como concluído.
 class WorkoutItemTile extends StatelessWidget {
   const WorkoutItemTile({
     super.key,
     required this.posicao,
     required this.item,
     required this.concluido,
-    required this.podeMarcar,
-    required this.onAlternar,
+    required this.ehHoje,
+    required this.onAbrir,
   });
 
   /// Número do exercício na lista (1, 2, 3...).
@@ -21,12 +22,11 @@ class WorkoutItemTile extends StatelessWidget {
   final WorkoutItem item;
   final bool concluido;
 
-  /// false quando o treino é de outro dia (só visualização) ou quando as
-  /// marcações ainda não carregaram.
-  final bool podeMarcar;
+  /// false quando o treino é de outro dia (só visualização).
+  final bool ehHoje;
 
-  /// Chamado com o NOVO valor (true = concluído).
-  final ValueChanged<bool> onAlternar;
+  /// Chamado ao tocar no cartão (abre a tela do exercício).
+  final VoidCallback onAbrir;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +38,7 @@ class WorkoutItemTile extends StatelessWidget {
     final Widget marcador;
     if (concluido) {
       marcador = Icon(Icons.check_circle, size: 36, color: cores.primary);
-    } else if (podeMarcar) {
+    } else if (ehHoje) {
       marcador = Icon(Icons.radio_button_unchecked, size: 36, color: cores.outline);
     } else {
       // Treino de outro dia: mostra só o número do exercício.
@@ -48,13 +48,15 @@ class WorkoutItemTile extends StatelessWidget {
     return Semantics(
       container: true,
       // null = o leitor de tela não anuncia "marcado/desmarcado".
-      checked: podeMarcar ? concluido : null,
+      checked: ehHoje ? concluido : null,
+      button: true,
+      hint: 'Abre os detalhes do exercício',
       child: Card(
         margin: const EdgeInsets.only(bottom: 10),
         color: concluido ? cores.primaryContainer : null,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: podeMarcar ? () => onAlternar(!concluido) : null,
+          onTap: onAbrir,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -91,6 +93,8 @@ class WorkoutItemTile extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           observacao,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 15,
                             fontStyle: FontStyle.italic,
@@ -101,6 +105,7 @@ class WorkoutItemTile extends StatelessWidget {
                     ],
                   ),
                 ),
+                Icon(Icons.chevron_right, color: cores.outline),
               ],
             ),
           ),
