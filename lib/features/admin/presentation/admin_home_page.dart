@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../../../core/mensagens.dart';
 import '../../../core/rotas.dart';
 import '../../auth/presentation/auth_controller.dart';
+import '../../dashboard/data/dashboard_repository.dart';
+import '../../dashboard/presentation/today_tab.dart';
 import 'exercise_sheet.dart';
 import 'exercises_tab.dart';
 import 'students_tab.dart';
 
-/// Painel do personal: duas abas (Alunos e Exercícios).
+/// Painel do personal: três abas (Hoje, Alunos e Exercícios).
 class AdminHomePage extends ConsumerStatefulWidget {
   const AdminHomePage({super.key});
 
@@ -34,12 +36,18 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
   @override
   Widget build(BuildContext context) {
     final perfil = ref.watch(currentProfileProvider);
-    final naAbaDeAlunos = _aba == 0;
+    const titulos = ['Hoje', 'Meus alunos', 'Exercícios'];
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(naAbaDeAlunos ? 'Meus alunos' : 'Exercícios'),
+        title: Text(titulos[_aba]),
         actions: [
+          if (_aba == 0)
+            IconButton(
+              tooltip: 'Atualizar',
+              icon: const Icon(Icons.refresh),
+              onPressed: () => ref.invalidate(painelDeHojeProvider),
+            ),
           if (perfil != null)
             Padding(
               padding: const EdgeInsets.only(right: 4),
@@ -63,27 +71,38 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
           ),
         ],
       ),
-      // IndexedStack mantém as duas abas "vivas": ao trocar de aba, a lista
+      // IndexedStack mantém as três abas "vivas": ao trocar de aba, a lista
       // e o filtro continuam como você deixou.
       body: IndexedStack(
         index: _aba,
-        children: const [StudentsTab(), ExercisesTab()],
+        children: const [TodayTab(), StudentsTab(), ExercisesTab()],
       ),
-      floatingActionButton: naAbaDeAlunos
-          ? FloatingActionButton.extended(
-              onPressed: () => context.push(Rotas.alunoNovo),
-              icon: const Icon(Icons.person_add_alt_1),
-              label: const Text('Novo aluno'),
-            )
-          : FloatingActionButton.extended(
-              onPressed: () => abrirFormularioExercicio(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Novo exercício'),
-            ),
+      floatingActionButton: switch (_aba) {
+        1 => FloatingActionButton.extended(
+            onPressed: () => context.push(Rotas.alunoNovo),
+            icon: const Icon(Icons.person_add_alt_1),
+            label: const Text('Novo aluno'),
+          ),
+        2 => FloatingActionButton.extended(
+            onPressed: () => abrirFormularioExercicio(context),
+            icon: const Icon(Icons.add),
+            label: const Text('Novo exercício'),
+          ),
+        _ => null,
+      },
       bottomNavigationBar: NavigationBar(
         selectedIndex: _aba,
-        onDestinationSelected: (i) => setState(() => _aba = i),
+        onDestinationSelected: (i) {
+          // Ao voltar para "Hoje", busca os números de novo.
+          if (i == 0) ref.invalidate(painelDeHojeProvider);
+          setState(() => _aba = i);
+        },
         destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.today_outlined),
+            selectedIcon: Icon(Icons.today),
+            label: 'Hoje',
+          ),
           NavigationDestination(
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),

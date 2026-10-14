@@ -157,14 +157,30 @@ class _Conteudo extends ConsumerWidget {
                         value: aluno.ativo,
                         onChanged: (v) => _alternarAtivo(context, ref, v),
                       ),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: OutlinedButton.icon(
-                          style: compactoContorno(),
-                          onPressed: () => abrirRedefinirSenha(context, aluno),
-                          icon: const Icon(Icons.lock_reset),
-                          label: const Text('Redefinir senha'),
-                        ),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilledButton.icon(
+                            style: compactoPreenchido(),
+                            onPressed: () => context.push(
+                              Uri(
+                                path: Rotas.alunoProgresso(aluno.id),
+                                queryParameters: {
+                                  'nome': primeiroNome(aluno.nome),
+                                },
+                              ).toString(),
+                            ),
+                            icon: const Icon(Icons.calendar_month),
+                            label: const Text('Ver progresso'),
+                          ),
+                          OutlinedButton.icon(
+                            style: compactoContorno(),
+                            onPressed: () => abrirRedefinirSenha(context, aluno),
+                            icon: const Icon(Icons.lock_reset),
+                            label: const Text('Redefinir senha'),
+                          ),
+                        ],
                       ),
                     ],
                   ),

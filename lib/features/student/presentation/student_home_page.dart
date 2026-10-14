@@ -93,6 +93,11 @@ class _StudentHomePageState extends ConsumerState<StudentHomePage>
         title: const Text('Meu treino'),
         actions: [
           IconButton(
+            tooltip: 'Meu progresso',
+            icon: const Icon(Icons.calendar_month),
+            onPressed: () => context.push(Rotas.progresso),
+          ),
+          IconButton(
             tooltip: 'Sair',
             icon: const Icon(Icons.logout),
             onPressed: _sair,
