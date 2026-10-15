@@ -5,7 +5,9 @@ class Rotas {
   static const splash = '/splash';
   static const login = '/login';
   static const admin = '/admin';
+  static const professor = '/professor';
   static const aluno = '/aluno';
+  
 
   // Tela do exercício do aluno (começa com /aluno: protegida pela mesma regra).
   static const progresso = '/aluno/progresso';

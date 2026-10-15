@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,48 +15,50 @@ import '../features/student/presentation/exercise_detail_page.dart';
 import '../features/student/presentation/student_home_page.dart';
 import 'rotas.dart';
 
-/// Regra de proteção das rotas. Devolve:
-///  - null  → pode ficar onde está;
-///  - texto → manda o usuário para essa rota.
-///
-/// Está separada numa função simples para ficar fácil de entender e testar.
+/// Decide para qual área cada perfil pode acessar.
 String? decidirRedirecionamento({
   required bool carregando,
   required Profile? perfil,
   required String local,
 }) {
-  // Ainda descobrindo se existe login salvo.
   if (carregando) {
     return local == Rotas.splash ? null : Rotas.splash;
   }
 
-  // Ninguém logado: só a tela de login é permitida.
   if (perfil == null) {
     return local == Rotas.login ? null : Rotas.login;
   }
 
-  // Logado como ADMIN: só as telas /admin.
-  if (perfil.isAdmin) {
-    final lugarCerto = local.startsWith(Rotas.admin);
-    return lugarCerto ? null : Rotas.admin;
-  }
+  switch (perfil.perfil) {
+    case Perfil.admin:
+      final lugarCerto = local.startsWith('${Rotas.admin}/') ||
+          local == Rotas.admin;
+      return lugarCerto ? null : Rotas.admin;
 
-  // Logado como ALUNO: só as telas /aluno.
-  final lugarCerto = local.startsWith(Rotas.aluno);
-  return lugarCerto ? null : Rotas.aluno;
+    case Perfil.professor:
+      final lugarCerto = local.startsWith('${Rotas.professor}/') ||
+          local == Rotas.professor;
+      return lugarCerto ? null : Rotas.professor;
+
+    case Perfil.aluno:
+      final lugarCerto = local.startsWith('${Rotas.aluno}/') ||
+          local == Rotas.aluno;
+      return lugarCerto ? null : Rotas.aluno;
+  }
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // Sempre que o estado de login mudar, avisamos o GoRouter para reavaliar
-  // o redirecionamento.
   final aviso = ValueNotifier<int>(0);
-  ref.listen(authControllerProvider, (anterior, atual) => aviso.value++);
+  ref.listen(authControllerProvider, (anterior, atual) {
+    aviso.value++;
+  });
 
   final router = GoRouter(
     initialLocation: Rotas.splash,
     refreshListenable: aviso,
     redirect: (context, state) {
       final auth = ref.read(authControllerProvider);
+
       return decidirRedirecionamento(
         carregando: auth.isLoading && !auth.hasValue,
         perfil: auth.hasValue ? auth.value : null,
@@ -72,22 +74,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Rotas.login,
         builder: (context, state) => const LoginPage(),
       ),
+
+      // Área provisória do professor.
+      GoRoute(
+        path: Rotas.professor,
+        builder: (context, state) => const Scaffold(
+          body: Center(
+            child: Text('Área do professor em construção'),
+          ),
+        ),
+      ),
+
+      // Área do administrador.
       GoRoute(
         path: Rotas.admin,
         builder: (context, state) => const AdminHomePage(),
-        // Rotas "filhas": abrem EMPILHADAS sobre o painel (o botão voltar
-        // funciona). Aqui o caminho não começa com "/".
         routes: [
-          // "aluno/novo" precisa vir ANTES de "aluno/:id",
-          // senão "novo" seria entendido como o id de um aluno.
           GoRoute(
             path: 'aluno/novo',
             builder: (context, state) => const StudentFormPage(),
           ),
           GoRoute(
             path: 'aluno/:id',
-            builder: (context, state) =>
-                StudentDetailPage(alunoId: state.pathParameters['id']!),
+            builder: (context, state) => StudentDetailPage(
+              alunoId: state.pathParameters['id']!,
+            ),
             routes: [
               GoRoute(
                 path: 'progresso',
@@ -106,11 +117,11 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'treino/:dia',
                 builder: (context, state) {
-                  final dia = int.tryParse(state.pathParameters['dia'] ?? '');
+                  final dia =
+                      int.tryParse(state.pathParameters['dia'] ?? '');
+
                   return WorkoutEditorPage(
                     alunoId: state.pathParameters['id']!,
-                    // Se alguém digitar um dia inválido na barra de endereço,
-                    // usamos segunda-feira em vez de quebrar.
                     dia: (dia != null && dia >= 0 && dia <= 6) ? dia : 1,
                   );
                 },
@@ -119,6 +130,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+
+      // Área do aluno.
       GoRoute(
         path: Rotas.aluno,
         builder: (context, state) => const StudentHomePage(),
@@ -129,8 +142,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: 'exercicio/:itemId',
-            builder: (context, state) =>
-                ExerciseDetailPage(itemId: state.pathParameters['itemId']!),
+            builder: (context, state) => ExerciseDetailPage(
+              itemId: state.pathParameters['itemId']!,
+            ),
           ),
         ],
       ),
