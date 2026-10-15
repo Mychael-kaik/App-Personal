@@ -14,6 +14,7 @@ import '../features/progress/presentation/progress_page.dart';
 import '../features/student/presentation/exercise_detail_page.dart';
 import '../features/student/presentation/student_home_page.dart';
 import 'rotas.dart';
+import '../features/professor/presentation/professor_home_page.dart';
 
 /// Decide para qual área cada perfil pode acessar.
 String? decidirRedirecionamento({
@@ -78,11 +79,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Área provisória do professor.
       GoRoute(
         path: Rotas.professor,
-        builder: (context, state) => const Scaffold(
-          body: Center(
-            child: Text('Área do professor em construção'),
-          ),
-        ),
+        builder: (context, state) => const ProfessorHomePage(),
       ),
 
       // Área do administrador.
