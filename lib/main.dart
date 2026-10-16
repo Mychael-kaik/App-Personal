@@ -17,10 +17,10 @@ Future<void> main() async {
 
   // Liga o app ao seu projeto Supabase. A sessão de login fica salva no
   // aparelho, então o usuário não precisa logar toda vez que abre o app.
-await Supabase.initialize(
-  url: Env.supabaseUrl,
-  publishableKey: Env.supabaseKey,
-);
+  await Supabase.initialize(
+    url: Env.supabaseUrl,
+    anonKey: Env.supabaseKey,
+  );
 
   // ProviderScope = "caixa" onde o Riverpod guarda o estado do app.
   //

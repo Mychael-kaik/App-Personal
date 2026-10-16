@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../auth/domain/profile.dart';
+import '../domain/academia.dart';
 import '../domain/exercise.dart';
 import '../domain/workout.dart';
 import 'admin_repository.dart';
@@ -40,4 +41,20 @@ final exerciciosProvider = FutureProvider.autoDispose<List<Exercise>>((ref) {
 final treinosDoAlunoProvider =
     FutureProvider.autoDispose.family<List<Workout>, String>((ref, alunoId) {
   return ref.watch(adminRepositoryProvider).listarTreinos(alunoId);
+});
+
+/// Exercícios que podem entrar no treino de um aluno (biblioteca do professor dele).
+final exerciciosDoAlunoProvider =
+    FutureProvider.autoDispose.family<List<Exercise>, String>((ref, alunoId) {
+  return ref.watch(adminRepositoryProvider).listarExerciciosDoAluno(alunoId);
+});
+
+/// Academias (o administrador geral vê todas; o professor, só a dele).
+final academiasProvider = FutureProvider.autoDispose<List<Academia>>((ref) {
+  return ref.watch(adminRepositoryProvider).listarAcademias();
+});
+
+/// Professores (só o administrador geral enxerga todos).
+final professoresProvider = FutureProvider.autoDispose<List<Profile>>((ref) {
+  return ref.watch(adminRepositoryProvider).listarProfessores();
 });

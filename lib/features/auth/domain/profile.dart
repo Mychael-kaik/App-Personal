@@ -1,22 +1,23 @@
-
 /// Tipo de usuário do app.
+///  - admin: administrador geral (vê e gerencia tudo);
+///  - professor: cuida só dos próprios alunos e da própria biblioteca;
+///  - aluno: vê só o próprio treino.
 enum Perfil {
   admin,
   professor,
   aluno;
 
-  static Perfil deTexto(String valor) {
-    switch (valor) {
-      case 'admin':
-        return Perfil.admin;
-      case 'professor':
-        return Perfil.professor;
-      case 'aluno':
-        return Perfil.aluno;
-      default:
-        throw FormatException('Perfil de usuário desconhecido: $valor');
-    }
-  }
+  static Perfil deTexto(String valor) => switch (valor) {
+        'admin' => Perfil.admin,
+        'professor' => Perfil.professor,
+        _ => Perfil.aluno,
+      };
+
+  String get rotulo => switch (this) {
+        Perfil.admin => 'Administrador geral',
+        Perfil.professor => 'Professor',
+        Perfil.aluno => 'Aluno',
+      };
 }
 
 /// Uma linha da tabela `profiles` do banco.
@@ -38,12 +39,20 @@ class Profile {
   final Perfil perfil;
   final bool ativo;
   final String? observacoes;
+
+  /// Academia da pessoa (professores e alunos). null = administrador geral
+  /// ou aluno antigo que ainda não foi passado para um professor.
   final String? academiaId;
+
+  /// Só para alunos: o professor responsável. null = ainda sem professor.
   final String? professorId;
 
+  /// Administrador geral.
   bool get isAdmin => perfil == Perfil.admin;
   bool get isProfessor => perfil == Perfil.professor;
-  bool get isAluno => perfil == Perfil.aluno;
+
+  /// Equipe = quem usa o painel (administrador geral ou professor).
+  bool get isEquipe => isAdmin || isProfessor;
 
   /// Converte o Map que o Supabase devolve em um objeto Profile.
   factory Profile.fromMap(Map<String, dynamic> map) {

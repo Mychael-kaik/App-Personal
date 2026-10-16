@@ -5,9 +5,7 @@ class Rotas {
   static const splash = '/splash';
   static const login = '/login';
   static const admin = '/admin';
-  static const professor = '/professor';
   static const aluno = '/aluno';
-  
 
   // Tela do exercício do aluno (começa com /aluno: protegida pela mesma regra).
   static const progresso = '/aluno/progresso';
@@ -16,6 +14,7 @@ class Rotas {
   // Telas internas do admin (todas começam com /admin, então ficam
   // protegidas pela mesma regra de redirecionamento).
   static const alunoNovo = '/admin/aluno/novo';
+  static const professorNovo = '/admin/professor/novo';
   static String alunoDetalhe(String id) => '/admin/aluno/$id';
   static String alunoEditar(String id) => '/admin/aluno/$id/editar';
   static String alunoProgresso(String id) => '/admin/aluno/$id/progresso';

@@ -6,9 +6,12 @@ import '../../../core/formatters.dart';
 import '../../../core/mensagens.dart';
 import '../../../core/rotas.dart';
 import '../../../core/widgets/estados.dart';
+import '../../auth/presentation/auth_controller.dart';
 import '../data/admin_providers.dart';
 
 /// Aba "Alunos": lista com busca. Tocar em um aluno abre o treino dele.
+/// Professor: vê só os próprios alunos (o banco já filtra).
+/// Administrador geral: vê todos e pode filtrar por professor.
 class StudentsTab extends ConsumerStatefulWidget {
   const StudentsTab({super.key});
 
@@ -18,6 +21,8 @@ class StudentsTab extends ConsumerStatefulWidget {
 
 class _StudentsTabState extends ConsumerState<StudentsTab> {
   String _busca = '';
+  // Filtro do administrador geral: null = todos, '' = sem professor, outro = id do professor.
+  String? _professorFiltro;
 
   Future<void> _atualizar() async {
     ref.invalidate(alunosProvider);
@@ -31,6 +36,16 @@ class _StudentsTabState extends ConsumerState<StudentsTab> {
   @override
   Widget build(BuildContext context) {
     final alunos = ref.watch(alunosProvider);
+    final ehAdmin = ref.watch(currentProfileProvider)?.isAdmin ?? false;
+    final professores =
+        ehAdmin ? (ref.watch(professoresProvider).value ?? const []) : const [];
+    String? nomeDoProfessor(String? id) {
+      if (id == null) return null;
+      for (final p in professores) {
+        if (p.id == id) return p.nome;
+      }
+      return null;
+    }
 
     return alunos.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -48,13 +63,17 @@ class _StudentsTabState extends ConsumerState<StudentsTab> {
         }
 
         final termo = _busca.trim().toLowerCase();
-        final filtrados = termo.isEmpty
-            ? lista
-            : lista
-                .where((a) =>
-                    a.nome.toLowerCase().contains(termo) ||
-                    (a.email ?? '').toLowerCase().contains(termo))
-                .toList();
+        final filtrados = lista.where((a) {
+          if (ehAdmin && _professorFiltro != null) {
+            final doFiltro = _professorFiltro == ''
+                ? a.professorId == null
+                : a.professorId == _professorFiltro;
+            if (!doFiltro) return false;
+          }
+          if (termo.isEmpty) return true;
+          return a.nome.toLowerCase().contains(termo) ||
+              (a.email ?? '').toLowerCase().contains(termo);
+        }).toList();
 
         return Column(
           children: [
@@ -73,6 +92,38 @@ class _StudentsTabState extends ConsumerState<StudentsTab> {
                 onChanged: (v) => setState(() => _busca = v),
               ),
             ),
+            if (ehAdmin)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                child: Row(
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Todos'),
+                      selected: _professorFiltro == null,
+                      onSelected: (_) => setState(() => _professorFiltro = null),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: ChoiceChip(
+                        label: const Text('Sem professor'),
+                        selected: _professorFiltro == '',
+                        onSelected: (_) => setState(() => _professorFiltro = ''),
+                      ),
+                    ),
+                    for (final p in professores)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: ChoiceChip(
+                          label: Text(p.nome),
+                          selected: _professorFiltro == p.id,
+                          onSelected: (_) =>
+                              setState(() => _professorFiltro = p.id),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _atualizar,
@@ -111,7 +162,13 @@ class _StudentsTabState extends ConsumerState<StudentsTab> {
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              subtitle: Text(aluno.email ?? ''),
+                              subtitle: Text(
+                                ehAdmin
+                                    ? '${aluno.email ?? ''}\n'
+                                        'Professor: ${nomeDoProfessor(aluno.professorId) ?? 'sem professor'}'
+                                    : (aluno.email ?? ''),
+                              ),
+                              isThreeLine: ehAdmin,
                               trailing: aluno.ativo
                                   ? const Icon(Icons.chevron_right)
                                   : const Chip(label: Text('Inativo')),

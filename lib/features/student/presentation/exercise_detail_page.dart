@@ -58,6 +58,12 @@ class _ExerciseDetailPageState extends ConsumerState<ExerciseDetailPage> {
   void _terminarSerie(WorkoutItem item) {
     final feitas = _seriesFeitas + 1;
     setState(() => _seriesFeitas = feitas);
+    // Última série: o exercício é concluído automaticamente (grava no banco
+    // e começa o descanso final, se o professor configurou).
+    if (feitas >= item.series) {
+      _concluir(item);
+      return;
+    }
     // Depois da última série não tem descanso de série: o descanso final
     // começa quando o aluno tocar em "Exercício concluído".
     final segundos = item.descansoSerieSegundos ?? 0;
@@ -325,13 +331,21 @@ class _ExerciseDetailPageState extends ConsumerState<ExerciseDetailPage> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SeriesFeitas(feitas: _seriesFeitas, total: item.series),
+        _SeriesFeitas(
+          feitas: _seriesFeitas,
+          total: item.series,
+          repeticoes: item.repeticoes,
+        ),
         const SizedBox(height: 10),
         if (faltamSeries) ...[
           OutlinedButton.icon(
             onPressed: _gravando ? null : () => _terminarSerie(item),
             icon: const Icon(Icons.done),
-            label: Text('Terminei a série ${_seriesFeitas + 1}'),
+            label: Text(
+              _seriesFeitas + 1 >= item.series
+                  ? 'Terminei a última série'
+                  : 'Terminei a série ${_seriesFeitas + 1}',
+            ),
           ),
           const SizedBox(height: 8),
         ],
@@ -500,10 +514,15 @@ class _Texto extends StatelessWidget {
 
 /// Bolinhas das séries: cheia = feita. "Série 2 de 4".
 class _SeriesFeitas extends StatelessWidget {
-  const _SeriesFeitas({required this.feitas, required this.total});
+  const _SeriesFeitas({
+    required this.feitas,
+    required this.total,
+    this.repeticoes,
+  });
 
   final int feitas;
   final int total;
+  final int? repeticoes;
 
   @override
   Widget build(BuildContext context) {
@@ -511,7 +530,10 @@ class _SeriesFeitas extends StatelessWidget {
     return Column(
       children: [
         Text(
-          '$feitas de $total ${total == 1 ? 'série feita' : 'séries feitas'}',
+          [
+            'Série ${feitas < total ? feitas + 1 : total} de $total',
+            if (repeticoes != null) '$repeticoes repetições',
+          ].join(' · '),
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 6),

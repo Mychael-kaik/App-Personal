@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show FontFeature;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -46,10 +47,7 @@ class _RestTimerState extends State<RestTimer> {
     super.initState();
     _total = widget.segundos;
     _fim = DateTime.now().add(Duration(seconds: widget.segundos));
-    _relogio = Timer.periodic(
-      const Duration(milliseconds: 250),
-      (_) => _tique(),
-    );
+    _relogio = Timer.periodic(const Duration(milliseconds: 250), (_) => _tique());
   }
 
   @override

@@ -21,6 +21,7 @@ class Exercise {
     required this.grupoMuscular,
     this.descricao,
     this.fotoPath,
+    this.donoId,
   });
 
   final String id;
@@ -33,6 +34,10 @@ class Exercise {
 
   /// Caminho da foto no Storage (bucket `exercicios`). null = sem foto.
   final String? fotoPath;
+
+  /// Quem é o dono do exercício (um professor, ou o administrador geral).
+  /// Cada professor tem a sua biblioteca.
+  final String? donoId;
 
   /// Os grupos separados, em lista (ex.: ["Peito", "Tríceps"]).
   List<String> get grupos => separarGrupos(grupoMuscular);
@@ -63,6 +68,7 @@ class Exercise {
       grupoMuscular: map['grupo_muscular'] as String,
       descricao: map['descricao'] as String?,
       fotoPath: map['foto_path'] as String?,
+      donoId: map['dono_id'] as String?,
     );
   }
 

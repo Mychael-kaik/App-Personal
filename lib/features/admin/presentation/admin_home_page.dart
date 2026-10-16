@@ -10,8 +10,10 @@ import '../../dashboard/presentation/today_tab.dart';
 import 'exercise_sheet.dart';
 import 'exercises_tab.dart';
 import 'students_tab.dart';
+import 'team_tab.dart';
 
-/// Painel do personal: três abas (Hoje, Alunos e Exercícios).
+/// Painel da equipe. Professor: Hoje, Alunos e Exercícios (só o que é dele).
+/// Administrador geral: essas três + "Equipe" (academias e professores).
 class AdminHomePage extends ConsumerStatefulWidget {
   const AdminHomePage({super.key});
 
@@ -36,7 +38,13 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
   @override
   Widget build(BuildContext context) {
     final perfil = ref.watch(currentProfileProvider);
-    const titulos = ['Hoje', 'Meus alunos', 'Exercícios'];
+    final ehAdmin = perfil?.isAdmin ?? false;
+    final titulos = [
+      'Hoje',
+      ehAdmin ? 'Alunos' : 'Meus alunos',
+      ehAdmin ? 'Exercícios (por professor)' : 'Meus exercícios',
+      if (ehAdmin) 'Equipe',
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -75,7 +83,12 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
       // e o filtro continuam como você deixou.
       body: IndexedStack(
         index: _aba,
-        children: const [TodayTab(), StudentsTab(), ExercisesTab()],
+        children: [
+          const TodayTab(),
+          const StudentsTab(),
+          const ExercisesTab(),
+          if (ehAdmin) const TeamTab(),
+        ],
       ),
       floatingActionButton: switch (_aba) {
         1 => FloatingActionButton.extended(
@@ -88,6 +101,11 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
             icon: const Icon(Icons.add),
             label: const Text('Novo exercício'),
           ),
+        3 => FloatingActionButton.extended(
+            onPressed: () => context.push(Rotas.professorNovo),
+            icon: const Icon(Icons.person_add_alt_1),
+            label: const Text('Novo professor'),
+          ),
         _ => null,
       },
       bottomNavigationBar: NavigationBar(
@@ -97,22 +115,28 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
           if (i == 0) ref.invalidate(painelDeHojeProvider);
           setState(() => _aba = i);
         },
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.today_outlined),
             selectedIcon: Icon(Icons.today),
             label: 'Hoje',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),
             label: 'Alunos',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.fitness_center_outlined),
             selectedIcon: Icon(Icons.fitness_center),
             label: 'Exercícios',
           ),
+          if (ehAdmin)
+            const NavigationDestination(
+              icon: Icon(Icons.groups_outlined),
+              selectedIcon: Icon(Icons.groups),
+              label: 'Equipe',
+            ),
         ],
       ),
     );

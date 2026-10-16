@@ -219,14 +219,15 @@ class _EditorFormState extends ConsumerState<_EditorForm> {
                         physics: const NeverScrollableScrollPhysics(),
                         buildDefaultDragHandles: false,
                         itemCount: _itens.length,
-                        
-                        onReorderItem: (antigo, novo) {
+                        onReorder: (antigo, novo) {
                           setState(() {
+                            // Detalhe do Flutter: ao arrastar para baixo, o
+                            // índice de destino vem 1 posição a mais.
+                            if (novo > antigo) novo -= 1;
                             final movido = _itens.removeAt(antigo);
                             _itens.insert(novo, movido);
                           });
                         },
-
                         itemBuilder: (context, index) {
                           final rascunho = _itens[index];
                           final item = rascunho.item;

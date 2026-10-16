@@ -114,9 +114,8 @@ class _StudentHomePageState extends ConsumerState<StudentHomePage>
               children: [
                 Text(
                   nome.isEmpty ? 'Olá!' : 'Olá, $nome!',
-                  style: tema.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: tema.textTheme.headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -144,8 +143,11 @@ class _StudentHomePageState extends ConsumerState<StudentHomePage>
                       onTentarNovamente: _recarregar,
                     ),
                   ),
-                  data: (lista) =>
-                      _TreinoDoDia(lista: lista, dia: dia, ehHoje: dia == hoje),
+                  data: (lista) => _TreinoDoDia(
+                    lista: lista,
+                    dia: dia,
+                    ehHoje: dia == hoje,
+                  ),
                 ),
               ],
             ),
@@ -185,9 +187,8 @@ class _SeletorDeDias extends StatelessWidget {
               nomeCurtoDoDia(d),
               style: TextStyle(
                 fontSize: 15,
-                fontWeight: diasComTreino.contains(d)
-                    ? FontWeight.w800
-                    : FontWeight.w400,
+                fontWeight:
+                    diasComTreino.contains(d) ? FontWeight.w800 : FontWeight.w400,
               ),
             ),
             selected: d == selecionado,
@@ -247,8 +248,7 @@ class _TreinoDoDia extends ConsumerWidget {
       return const EstadoVazio(
         icone: Icons.hourglass_empty,
         titulo: 'Treino sem exercícios',
-        mensagem:
-            'Este treino ainda não tem exercícios. Fale com o seu personal.',
+        mensagem: 'Este treino ainda não tem exercícios. Fale com o seu personal.',
       );
     }
 
@@ -277,9 +277,8 @@ class _TreinoDoDia extends ConsumerWidget {
                         children: [
                           Text(
                             treino.titulo,
-                            style: tema.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
+                            style: tema.textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w800),
                           ),
                           Text(
                             '$total ${total == 1 ? 'exercício' : 'exercícios'}'
@@ -294,9 +293,8 @@ class _TreinoDoDia extends ConsumerWidget {
                   const SizedBox(height: 16),
                   Text(
                     '$feitos de $total concluídos',
-                    style: tema.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: tema.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   LinearProgressIndicator(
@@ -320,8 +318,7 @@ class _TreinoDoDia extends ConsumerWidget {
         if (!ehHoje)
           _Aviso(
             icone: Icons.info_outline,
-            texto:
-                'Este é o treino de outro dia. Toque num exercício para ver '
+            texto: 'Este é o treino de outro dia. Toque num exercício para ver '
                 'os detalhes. Você conclui no próprio dia do treino.',
             fundo: cores.secondaryContainer,
             corDoTexto: cores.onSecondaryContainer,
@@ -393,7 +390,7 @@ class _Aviso extends StatelessWidget {
               style: TextStyle(fontSize: 15, color: corDoTexto),
             ),
           ),
-          ?acao,
+          if (acao != null) acao!,
         ],
       ),
     );

@@ -6,10 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 ///
 /// O bucket é privado: não existe link público. Quem pede o link é o app,
 /// logado, e o banco só entrega se a pessoa for um usuário ativo (RLS).
-final urlDaFotoProvider = FutureProvider.autoDispose.family<String, String>((
-  ref,
-  caminho,
-) {
+final urlDaFotoProvider =
+    FutureProvider.autoDispose.family<String, String>((ref, caminho) {
   return Supabase.instance.client.storage
       .from('exercicios')
       .createSignedUrl(caminho, 3600);
@@ -28,15 +26,15 @@ class FotoExercicio extends ConsumerWidget {
     final url = ref.watch(urlDaFotoProvider(caminho));
 
     Widget aviso(IconData icone, String texto) => Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icone, size: 40, color: cores.outline),
-          const SizedBox(height: 8),
-          Text(texto, style: TextStyle(color: cores.onSurfaceVariant)),
-        ],
-      ),
-    );
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icone, size: 40, color: cores.outline),
+              const SizedBox(height: 8),
+              Text(texto, style: TextStyle(color: cores.onSurfaceVariant)),
+            ],
+          ),
+        );
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
@@ -46,20 +44,16 @@ class FotoExercicio extends ConsumerWidget {
           color: cores.surfaceContainerHighest,
           child: url.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, _) => aviso(
-              Icons.broken_image_outlined,
-              'Não foi possível abrir a foto',
-            ),
+            error: (_, __) =>
+                aviso(Icons.broken_image_outlined, 'Não foi possível abrir a foto'),
             data: (endereco) => Image.network(
               endereco,
               fit: BoxFit.cover,
               loadingBuilder: (context, filho, progresso) => progresso == null
                   ? filho
                   : const Center(child: CircularProgressIndicator()),
-              errorBuilder: (_, _, _) => aviso(
-                Icons.broken_image_outlined,
-                'Não foi possível abrir a foto',
-              ),
+              errorBuilder: (_, __, ___) =>
+                  aviso(Icons.broken_image_outlined, 'Não foi possível abrir a foto'),
             ),
           ),
         ),
@@ -85,16 +79,11 @@ class SemFoto extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.image_not_supported_outlined,
-                  size: 36,
-                  color: cores.outline,
-                ),
+                Icon(Icons.image_not_supported_outlined,
+                    size: 36, color: cores.outline),
                 const SizedBox(height: 6),
-                Text(
-                  'Sem foto de exemplo',
-                  style: TextStyle(color: cores.onSurfaceVariant),
-                ),
+                Text('Sem foto de exemplo',
+                    style: TextStyle(color: cores.onSurfaceVariant)),
               ],
             ),
           ),
