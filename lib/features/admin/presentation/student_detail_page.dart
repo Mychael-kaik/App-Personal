@@ -9,8 +9,10 @@ import '../../../core/mensagens.dart';
 import '../../../core/rotas.dart';
 import '../../../core/widgets/estados.dart';
 import '../../auth/domain/profile.dart';
+import '../../auth/presentation/auth_controller.dart';
 import '../data/admin_providers.dart';
 import '../domain/workout.dart';
+import 'confirmar_nome_dialog.dart';
 import 'duplicate_workout_dialog.dart';
 import 'reset_password_dialog.dart';
 
@@ -76,6 +78,32 @@ class _Conteudo extends ConsumerWidget {
       await ref.read(adminRepositoryProvider).definirAtivo(aluno.id, novoValor);
       ref.invalidate(alunoProvider(aluno.id));
       ref.invalidate(alunosProvider);
+    } catch (e) {
+      if (context.mounted) {
+        mostrarMensagem(context, mensagemDeErro(e), erro: true);
+      }
+    }
+  }
+
+  Future<void> _excluirDeVez(BuildContext context, WidgetRef ref) async {
+    final nome = await pedirNomeParaExcluir(
+      context,
+      titulo: 'Excluir aluno de vez?',
+      mensagem:
+          'Apaga o login, os treinos e todo o histórico de ${aluno.nome}. '
+          'Não dá para desfazer.',
+      nomeEsperado: aluno.nome,
+    );
+    if (nome == null || !context.mounted) return;
+    try {
+      await ref
+          .read(adminRepositoryProvider)
+          .excluirPessoa(id: aluno.id, confirmacao: nome);
+      ref.invalidate(alunosProvider);
+      if (context.mounted) {
+        mostrarMensagem(context, 'Aluno excluído.');
+        context.pop();
+      }
     } catch (e) {
       if (context.mounted) {
         mostrarMensagem(context, mensagemDeErro(e), erro: true);
@@ -180,6 +208,15 @@ class _Conteudo extends ConsumerWidget {
                             icon: const Icon(Icons.lock_reset),
                             label: const Text('Redefinir senha'),
                           ),
+                          if (!aluno.ativo &&
+                              (ref.watch(currentProfileProvider)?.isAdmin ??
+                                  false))
+                            OutlinedButton.icon(
+                              style: compactoContorno(),
+                              onPressed: () => _excluirDeVez(context, ref),
+                              icon: const Icon(Icons.delete_forever_outlined),
+                              label: const Text('Excluir de vez'),
+                            ),
                         ],
                       ),
                     ],

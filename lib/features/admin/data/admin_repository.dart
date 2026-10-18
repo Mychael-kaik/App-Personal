@@ -217,6 +217,51 @@ class AdminRepository {
   }
 
   // ===================================================================
+  // DESATIVAR E EXCLUIR COM SEGURANÇA (administrador geral)
+  // ===================================================================
+
+  /// Desativa um professor. Se ele tem alunos, [destinoId] é obrigatório: todos
+  /// os alunos (e os exercícios usados nos treinos deles) passam para o professor
+  /// de destino, numa única operação no banco. Devolve quantos alunos foram movidos.
+  Future<int> desativarProfessor({
+    required String professorId,
+    String? destinoId,
+  }) async {
+    final r = await _client.rpc(
+      'desativar_professor',
+      params: {'p_professor': professorId, 'p_destino': destinoId},
+    );
+    return r is int ? r : int.tryParse('$r') ?? 0;
+  }
+
+  /// Exclui uma academia. O banco só deixa se ela estiver suspensa e vazia.
+  Future<void> excluirAcademia(String id, {String? logoPath}) async {
+    await _client.rpc('excluir_academia', params: {'p_id': id});
+    if (logoPath != null) await removerLogo(logoPath);
+  }
+
+  /// Exclui de vez um aluno ou professor (Edge Function `admin-delete-user`).
+  /// O servidor exige conta já desativada e o nome digitado igual ao da pessoa.
+  Future<void> excluirPessoa({
+    required String id,
+    required String confirmacao,
+  }) async {
+    final token = _client.auth.currentSession?.accessToken;
+    if (token == null) {
+      throw const AppException('Sua sessão expirou. Entre novamente.');
+    }
+    final resposta = await _client.functions.invoke(
+      'admin-delete-user',
+      headers: {'Authorization': 'Bearer $token'},
+      body: {'id': id, 'confirmacao': confirmacao},
+    );
+    final dados = resposta.data;
+    if (dados is Map && dados['error'] is String) {
+      throw AppException(dados['error'] as String);
+    }
+  }
+
+  // ===================================================================
   // EXERCÍCIOS
   // ===================================================================
 

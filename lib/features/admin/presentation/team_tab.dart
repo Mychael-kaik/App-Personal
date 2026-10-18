@@ -11,6 +11,8 @@ import '../data/admin_providers.dart';
 import '../../../core/widgets/logo_academia.dart';
 import '../domain/academia.dart';
 import 'academia_dialog.dart';
+import 'confirmar_nome_dialog.dart';
+import 'desativar_professor_dialog.dart';
 import 'reset_password_dialog.dart';
 
 /// Aba "Equipe" (só o administrador geral): academias e os professores de cada uma.
@@ -32,26 +34,49 @@ class TeamTab extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     Profile professor,
+    int qtdAlunos,
   ) async {
     if (professor.ativo) {
-      final ok = await confirmar(
-        context,
-        titulo: 'Desativar professor?',
-        mensagem:
-            '${professor.nome} não conseguirá mais entrar no app. Os alunos '
-            'continuam com os treinos, mas ficam sem ninguém para cuidar deles '
-            'até você movê-los para outro professor.',
-        textoConfirmar: 'Desativar',
-        perigo: true,
-      );
-      if (!ok) return;
+      // O diálogo cuida de tudo: pede o professor de destino (se houver alunos)
+      // e chama o banco, que move os alunos e desativa numa operação só.
+      final ok = await abrirDesativarProfessor(context, professor, qtdAlunos);
+      if (ok && context.mounted) {
+        mostrarMensagem(context, '${professor.nome} foi desativado.');
+      }
+      return;
     }
-    if (!context.mounted) return;
+    try {
+      await ref.read(adminRepositoryProvider).definirAtivo(professor.id, true);
+      ref.invalidate(professoresProvider);
+    } catch (e) {
+      if (context.mounted) mostrarMensagem(context, mensagemDeErro(e), erro: true);
+    }
+  }
+
+  Future<void> _excluir(
+    BuildContext context,
+    WidgetRef ref,
+    Profile professor,
+  ) async {
+    final nome = await pedirNomeParaExcluir(
+      context,
+      titulo: 'Excluir professor de vez?',
+      mensagem:
+          'Isto apaga o login e os exercícios de ${professor.nome}. Não dá para '
+          'desfazer. Só é possível se ele não tiver mais alunos nem exercícios '
+          'usados em treinos.',
+      nomeEsperado: professor.nome,
+    );
+    if (nome == null || !context.mounted) return;
     try {
       await ref
           .read(adminRepositoryProvider)
-          .definirAtivo(professor.id, !professor.ativo);
+          .excluirPessoa(id: professor.id, confirmacao: nome);
       ref.invalidate(professoresProvider);
+      ref.invalidate(alunosProvider);
+      if (context.mounted) {
+        mostrarMensagem(context, 'Professor excluído.');
+      }
     } catch (e) {
       if (context.mounted) mostrarMensagem(context, mensagemDeErro(e), erro: true);
     }
@@ -123,7 +148,8 @@ class TeamTab extends ConsumerWidget {
                   .where((p) => p.academiaId == academia.id)
                   .toList(),
               alunosDe: alunosDe,
-              onAlternarAtivo: (p) => _alternarAtivo(context, ref, p),
+              onAlternarAtivo: (p) => _alternarAtivo(context, ref, p, alunosDe(p.id)),
+              onExcluir: (p) => _excluir(context, ref, p),
             ),
         ],
       ),
@@ -137,12 +163,14 @@ class _AcademiaCard extends StatelessWidget {
     required this.professores,
     required this.alunosDe,
     required this.onAlternarAtivo,
+    required this.onExcluir,
   });
 
   final Academia academia;
   final List<Profile> professores;
   final int Function(String professorId) alunosDe;
   final void Function(Profile professor) onAlternarAtivo;
+  final void Function(Profile professor) onExcluir;
 
   @override
   Widget build(BuildContext context) {
@@ -213,6 +241,8 @@ class _AcademiaCard extends StatelessWidget {
                         abrirRedefinirSenha(context, p);
                       case 'ativo':
                         onAlternarAtivo(p);
+                      case 'excluir':
+                        onExcluir(p);
                     }
                   },
                   itemBuilder: (_) => [
@@ -229,6 +259,11 @@ class _AcademiaCard extends StatelessWidget {
                       value: 'ativo',
                       child: Text(p.ativo ? 'Desativar' : 'Reativar'),
                     ),
+                    if (!p.ativo)
+                      const PopupMenuItem(
+                        value: 'excluir',
+                        child: Text('Excluir de vez'),
+                      ),
                   ],
                 ),
               ),

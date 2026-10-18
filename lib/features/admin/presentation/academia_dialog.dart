@@ -9,6 +9,7 @@ import '../../../core/mensagens.dart';
 import '../../../core/widgets/logo_academia.dart';
 import '../data/admin_providers.dart';
 import '../domain/academia.dart';
+import 'confirmar_nome_dialog.dart';
 
 /// Cria (academia == null) ou edita uma academia. Só o administrador geral
 /// consegue gravar (o banco recusa qualquer outra pessoa).
@@ -201,6 +202,34 @@ class _AcademiaDialogState extends ConsumerState<_AcademiaDialog> {
     }
   }
 
+  Future<void> _excluir() async {
+    final a = widget.academia!;
+    final nome = await pedirNomeParaExcluir(
+      context,
+      titulo: 'Excluir academia?',
+      mensagem:
+          'A academia "${a.nome}" será apagada de vez. Só é possível se ela '
+          'estiver suspensa e sem professores nem alunos.',
+      nomeEsperado: a.nome,
+    );
+    if (nome == null || !mounted) return;
+    setState(() {
+      _salvando = true;
+      _erro = null;
+    });
+    try {
+      await ref
+          .read(adminRepositoryProvider)
+          .excluirAcademia(a.id, logoPath: a.logoPath);
+      ref.invalidate(academiasProvider);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) setState(() => _erro = mensagemDeErro(e));
+    } finally {
+      if (mounted) setState(() => _salvando = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
@@ -289,6 +318,12 @@ class _AcademiaDialogState extends ConsumerState<_AcademiaDialog> {
         ),
       ),
       actions: [
+        if (_editando && !widget.academia!.ativo)
+          TextButton(
+            onPressed: _salvando ? null : _excluir,
+            style: TextButton.styleFrom(foregroundColor: tema.colorScheme.error),
+            child: const Text('Excluir'),
+          ),
         TextButton(
           onPressed: _salvando ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
