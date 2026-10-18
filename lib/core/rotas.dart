@@ -3,6 +3,7 @@ class Rotas {
   const Rotas._();
 
   static const splash = '/splash';
+  static const academias = '/academias';
   static const login = '/login';
   static const admin = '/admin';
   static const aluno = '/aluno';

@@ -8,6 +8,7 @@ import '../../../core/rotas.dart';
 import '../../../core/widgets/estados.dart';
 import '../../auth/domain/profile.dart';
 import '../data/admin_providers.dart';
+import '../../../core/widgets/logo_academia.dart';
 import '../domain/academia.dart';
 import 'academia_dialog.dart';
 import 'reset_password_dialog.dart';
@@ -155,8 +156,12 @@ class _AcademiaCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.business_outlined),
-                const SizedBox(width: 10),
+                LogoAcademia(
+                  nome: academia.nome,
+                  logoPath: academia.logoPath,
+                  tamanho: 40,
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     academia.nome,

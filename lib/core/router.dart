@@ -8,6 +8,8 @@ import '../features/admin/presentation/student_form_page.dart';
 import '../features/admin/presentation/workout_editor_page.dart';
 import '../features/auth/domain/profile.dart';
 import '../features/auth/presentation/auth_controller.dart';
+import '../features/auth/presentation/entrada_state.dart';
+import '../features/auth/presentation/escolha_academia_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/splash_page.dart';
 import '../features/progress/presentation/progress_page.dart';
@@ -24,15 +26,19 @@ String? decidirRedirecionamento({
   required bool carregando,
   required Profile? perfil,
   required String local,
+  bool temEscolha = false,
 }) {
   // Ainda descobrindo se existe login salvo.
   if (carregando) {
     return local == Rotas.splash ? null : Rotas.splash;
   }
 
-  // Ninguém logado: só a tela de login é permitida.
+  // Ninguém logado: primeiro a escolha da academia; o login só abre depois
+  // de escolher uma academia (ou "Sou administrador").
   if (perfil == null) {
-    return local == Rotas.login ? null : Rotas.login;
+    if (local == Rotas.academias) return null;
+    if (local == Rotas.login) return temEscolha ? null : Rotas.academias;
+    return Rotas.academias;
   }
 
   // Logado como EQUIPE (administrador geral ou professor): só as telas /admin.
@@ -52,14 +58,19 @@ final routerProvider = Provider<GoRouter>((ref) {
   // o redirecionamento.
   final aviso = ValueNotifier<int>(0);
   ref.listen(authControllerProvider, (anterior, atual) => aviso.value++);
+  ref.listen(splashProntoProvider, (anterior, atual) => aviso.value++);
+  ref.listen(entradaProvider, (anterior, atual) => aviso.value++);
 
   final router = GoRouter(
     initialLocation: Rotas.splash,
     refreshListenable: aviso,
     redirect: (context, state) {
       final auth = ref.read(authControllerProvider);
+      final splashPronto = ref.read(splashProntoProvider).hasValue;
       return decidirRedirecionamento(
-        carregando: auth.isLoading && !auth.hasValue,
+        // Mostra a logo do app por um instante ao abrir.
+        carregando: (auth.isLoading && !auth.hasValue) || !splashPronto,
+        temEscolha: ref.read(entradaProvider).temEscolha,
         perfil: auth.hasValue ? auth.value : null,
         local: state.matchedLocation,
       );
@@ -68,6 +79,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Rotas.splash,
         builder: (context, state) => const SplashPage(),
+      ),
+      GoRoute(
+        path: Rotas.academias,
+        builder: (context, state) => const EscolhaAcademiaPage(),
       ),
       GoRoute(
         path: Rotas.login,

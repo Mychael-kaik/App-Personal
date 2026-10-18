@@ -8,6 +8,9 @@ import '../../../core/estilos.dart';
 import '../../../core/mensagens.dart';
 import '../../../core/validators.dart';
 import '../../../core/widgets/foto_exercicio.dart';
+import '../../auth/presentation/auth_controller.dart';
+import '../../../core/app_exception.dart';
+import '../../auth/domain/profile.dart';
 import '../data/admin_providers.dart';
 import '../domain/exercise.dart';
 
@@ -45,6 +48,9 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
   late final List<String> _opcoes;
   bool _salvando = false;
   String? _erro;
+
+  // Só para o administrador geral ao CRIAR: de quem será a biblioteca.
+  String? _donoEscolhido;
 
   // Foto: a que já está salva, a nova escolhida (ainda não enviada) e se o
   // admin pediu para tirar a foto.
@@ -162,9 +168,17 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
           fotoPath: fotoFinal,
         );
       } else {
+        // O professor cria SEMPRE na própria biblioteca; o administrador
+        // geral escolhe de qual professor (o banco confere de novo).
+        final eu = ref.read(currentProfileProvider);
+        final donoId = (eu != null && eu.isAdmin) ? _donoEscolhido : eu?.id;
+        if (donoId == null) {
+          throw const AppException('Escolha de quem é a biblioteca.');
+        }
         await repo.criarExercicio(
           nome: nome,
           grupoMuscular: grupoMuscular,
+          donoId: donoId,
           descricao: descricao,
           fotoPath: fotoFinal,
         );
@@ -271,6 +285,31 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
                     ?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 16),
+              if (!_editando && (ref.watch(currentProfileProvider)?.isAdmin ?? false)) ...[
+                DropdownButtonFormField<String>(
+                  initialValue: _donoEscolhido,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: 'Biblioteca de qual professor?',
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  items: [
+                    for (final p in ref.watch(professoresProvider).value ??
+                        const <Profile>[])
+                      DropdownMenuItem(value: p.id, child: Text(p.nome)),
+                  ],
+                  onChanged: _salvando
+                      ? null
+                      : (v) => setState(() => _donoEscolhido = v),
+                  validator: (v) =>
+                      v == null ? 'Escolha o professor dono da biblioteca.' : null,
+                ),
+                const SizedBox(height: 16),
+              ],
               TextFormField(
                 controller: _nomeCtrl,
                 enabled: !_salvando,

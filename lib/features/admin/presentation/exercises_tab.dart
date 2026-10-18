@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/mensagens.dart';
 import '../../../core/widgets/estados.dart';
+import '../../auth/presentation/auth_controller.dart';
 import '../data/admin_providers.dart';
 import '../domain/exercise.dart';
 import 'exercise_sheet.dart';
@@ -49,6 +50,13 @@ class _ExercisesTabState extends ConsumerState<ExercisesTab> {
   @override
   Widget build(BuildContext context) {
     final exercicios = ref.watch(exerciciosProvider);
+    // O administrador geral vê as bibliotecas de todos: mostramos de quem é cada exercício.
+    final euAdmin = ref.watch(currentProfileProvider)?.isAdmin ?? false;
+    final nomesDosProfessores = <String, String>{
+      if (euAdmin)
+        for (final p in ref.watch(professoresProvider).value ?? const [])
+          p.id: p.nome,
+    };
 
     return exercicios.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -120,10 +128,14 @@ class _ExercisesTabState extends ConsumerState<ExercisesTab> {
                           ),
                         ),
                         subtitle: Text(
-                          descricao.isEmpty
-                              ? e.grupoMuscular
-                              : '${e.grupoMuscular} · $descricao',
-                          maxLines: 2,
+                          [
+                            descricao.isEmpty
+                                ? e.grupoMuscular
+                                : '${e.grupoMuscular} · $descricao',
+                            if (euAdmin)
+                              'Biblioteca: ${nomesDosProfessores[e.donoId] ?? 'Administrador geral'}',
+                          ].join('\n'),
+                          maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                         ),
                         trailing: PopupMenuButton<String>(

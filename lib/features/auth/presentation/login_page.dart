@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/app_exception.dart';
+import '../../../core/rotas.dart';
 import '../../../core/validators.dart';
+import '../../../core/widgets/logo_academia.dart';
 import 'auth_controller.dart';
+import 'entrada_state.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -70,9 +74,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
+  /// Volta para a lista de academias.
+  void _trocarAcademia() {
+    ref.read(entradaProvider.notifier).limpar();
+    context.go(Rotas.academias);
+  }
+
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
+    final escolha = ref.watch(entradaProvider);
+    final academia = escolha.academia;
 
     return Scaffold(
       body: SafeArea(
@@ -91,30 +103,36 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Center(
-                        child: Container(
-                          width: 84,
-                          height: 84,
-                          decoration: BoxDecoration(
-                            color: tema.colorScheme.primaryContainer,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.fitness_center,
-                            size: 42,
-                            color: tema.colorScheme.onPrimaryContainer,
-                          ),
-                        ),
+                        child: academia != null
+                            ? LogoAcademia(
+                                nome: academia.nome,
+                                logoPath: academia.logoPath,
+                                tamanho: 96,
+                              )
+                            : Container(
+                                width: 84,
+                                height: 84,
+                                decoration: BoxDecoration(
+                                  color: tema.colorScheme.primaryContainer,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.admin_panel_settings_outlined,
+                                  size: 42,
+                                  color: tema.colorScheme.onPrimaryContainer,
+                                ),
+                              ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
                       Text(
-                        'Bem-vindo!',
+                        academia?.nome ?? 'Administrador geral',
                         textAlign: TextAlign.center,
                         style: tema.textTheme.headlineMedium
                             ?.copyWith(fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Entre com seu e-mail e senha para ver seu treino.',
+                        'Entre com seu e-mail e senha.',
                         textAlign: TextAlign.center,
                         style: tema.textTheme.bodyLarge,
                       ),
@@ -187,7 +205,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               )
                             : const Text('Entrar'),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                        onPressed: _carregando ? null : _trocarAcademia,
+                        icon: const Icon(Icons.swap_horiz),
+                        label: Text(academia != null
+                            ? 'Trocar de academia'
+                            : 'Voltar para a escolha da academia'),
+                      ),
+                      const SizedBox(height: 12),
                       Text(
                         'Ainda não tem acesso? Peça ao seu personal para cadastrar você.',
                         textAlign: TextAlign.center,

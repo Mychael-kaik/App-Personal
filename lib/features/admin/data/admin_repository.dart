@@ -138,18 +138,61 @@ class AdminRepository {
     return dados.map<Academia>(Academia.fromMap).toList();
   }
 
-  Future<void> criarAcademia(String nome) async {
-    await _client.from('academias').insert({'nome': nome});
+  /// Cria a academia e devolve o id dela (para enviar a logo em seguida).
+  Future<String> criarAcademia(String nome) async {
+    final linha = await _client
+        .from('academias')
+        .insert({'nome': nome})
+        .select('id')
+        .single();
+    return linha['id'] as String;
   }
 
+  /// Atualiza a academia. [logoPath] troca a logo; [removerLogo] tira a logo.
   Future<void> atualizarAcademia(
     String id, {
     required String nome,
     required bool ativo,
+    String? logoPath,
+    bool removerLogo = false,
   }) async {
-    await _client
-        .from('academias')
-        .update({'nome': nome, 'ativo': ativo}).eq('id', id);
+    await _client.from('academias').update({
+      'nome': nome,
+      'ativo': ativo,
+      if (logoPath != null) 'logo_path': logoPath,
+      if (removerLogo && logoPath == null) 'logo_path': null,
+    }).eq('id', id);
+  }
+
+  /// Envia a logo para o bucket público `logos`, na pasta da academia
+  /// (`<id-da-academia>/arquivo`: o banco só deixa o administrador geral
+  /// gravar aí). Nome novo a cada envio, então nunca aparece logo antiga em cache.
+  Future<String> enviarLogo({
+    required String academiaId,
+    required Uint8List bytes,
+    required String contentType,
+  }) async {
+    final extensao = switch (contentType) {
+      'image/png' => 'png',
+      'image/webp' => 'webp',
+      _ => 'jpg',
+    };
+    final nome =
+        '${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(1 << 30)}';
+    final caminho = '$academiaId/$nome.$extensao';
+    await _client.storage.from('logos').uploadBinary(
+          caminho,
+          bytes,
+          fileOptions: FileOptions(contentType: contentType),
+        );
+    return caminho;
+  }
+
+  /// Apaga uma logo antiga. Se falhar, ignora (sobrar um arquivo não atrapalha).
+  Future<void> removerLogo(String caminho) async {
+    try {
+      await _client.storage.from('logos').remove([caminho]);
+    } catch (_) {}
   }
 
   Future<List<Profile>> listarProfessores() async {
