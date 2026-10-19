@@ -5,6 +5,7 @@ class Rotas {
   static const splash = '/splash';
   static const academias = '/academias';
   static const login = '/login';
+  static const recuperar = '/recuperar';
   static const admin = '/admin';
   static const aluno = '/aluno';
 

@@ -11,6 +11,7 @@ import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/entrada_state.dart';
 import '../features/auth/presentation/escolha_academia_page.dart';
 import '../features/auth/presentation/login_page.dart';
+import '../features/auth/presentation/recuperar_senha_page.dart';
 import '../features/auth/presentation/splash_page.dart';
 import '../features/progress/presentation/progress_page.dart';
 import '../features/student/presentation/exercise_detail_page.dart';
@@ -36,7 +37,7 @@ String? decidirRedirecionamento({
   // Ninguém logado: primeiro a escolha da academia; o login só abre depois
   // de escolher uma academia (ou "Sou administrador").
   if (perfil == null) {
-    if (local == Rotas.academias) return null;
+    if (local == Rotas.academias || local == Rotas.recuperar) return null;
     if (local == Rotas.login) return temEscolha ? null : Rotas.academias;
     return Rotas.academias;
   }
@@ -87,6 +88,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Rotas.login,
         builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: Rotas.recuperar,
+        builder: (context, state) => const RecuperarSenhaPage(),
       ),
       GoRoute(
         path: Rotas.admin,

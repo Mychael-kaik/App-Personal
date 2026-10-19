@@ -205,7 +205,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               )
                             : const Text('Entrar'),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 4),
+                      TextButton(
+                        onPressed:
+                            _carregando ? null : () => context.push(Rotas.recuperar),
+                        child: const Text('Esqueci minha senha'),
+                      ),
                       TextButton.icon(
                         onPressed: _carregando ? null : _trocarAcademia,
                         icon: const Icon(Icons.swap_horiz),

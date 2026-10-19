@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/app_exception.dart';
 import '../domain/profile.dart';
+import '../domain/recuperacao.dart';
 
 /// Único lugar que "conversa" com o Supabase para login/perfil.
 /// As telas nunca chamam o Supabase direto: elas pedem para este repositório.
@@ -65,6 +66,42 @@ class AuthRepository {
       );
     }
     return perfil;
+  }
+
+  /// Pede o envio do código de recuperação por e-mail. Por segurança o Supabase
+  /// responde igual exista o e-mail ou não (ninguém descobre quem é cadastrado).
+  Future<void> pedirCodigoDeRecuperacao(String email) async {
+    try {
+      await _client.auth.resetPasswordForEmail(email.trim());
+    } on AuthException catch (e) {
+      throw AppException(
+        traduzirErroDeRecuperacao(codigo: e.code, mensagem: e.message),
+      );
+    }
+  }
+
+  /// Confere o código e troca a senha. Ao terminar (com sucesso ou erro) a
+  /// sessão aberta pelo código é encerrada: a pessoa entra depois, normalmente,
+  /// passando pela escolha da academia.
+  Future<void> trocarSenhaComCodigo({
+    required String email,
+    required String codigo,
+    required String novaSenha,
+  }) async {
+    try {
+      await _client.auth.verifyOTP(
+        email: email.trim(),
+        token: codigo.trim(),
+        type: OtpType.recovery,
+      );
+      await _client.auth.updateUser(UserAttributes(password: novaSenha));
+    } on AuthException catch (e) {
+      throw AppException(
+        traduzirErroDeRecuperacao(codigo: e.code, mensagem: e.message),
+      );
+    } finally {
+      await sairSemErro();
+    }
   }
 
   Future<void> sair() => _client.auth.signOut();

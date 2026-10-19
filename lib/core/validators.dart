@@ -36,6 +36,16 @@ class Validators {
     return null;
   }
 
+  /// Código recebido por e-mail na recuperação de senha (só números, 6 a 10).
+  static String? codigoDoEmail(String? valor) {
+    final texto = (valor ?? '').trim();
+    if (texto.isEmpty) return 'Informe o código que chegou no e-mail.';
+    if (!RegExp(r'^\d{6,10}$').hasMatch(texto)) {
+      return 'O código tem só números (6 a 10 dígitos).';
+    }
+    return null;
+  }
+
   /// Campo opcional com limite de tamanho (descrições, observações).
   static String? tamanhoMaximo(String? valor, int max) {
     if ((valor ?? '').trim().length > max) {
