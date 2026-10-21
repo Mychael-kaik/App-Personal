@@ -274,6 +274,51 @@ class AdminRepository {
     return dados.map<Exercise>(Exercise.fromMap).toList();
   }
 
+  /// Biblioteca-modelo: exercícios do administrador geral que o professor
+  /// pode copiar (o banco só devolve a quem tem permissão).
+  Future<List<Exercise>> listarModelos() async {
+    final dados = await _client.rpc('listar_modelos');
+    return (dados as List)
+        .map<Exercise>((m) => Exercise.fromMap(m as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Copia um modelo para a biblioteca de quem chama (o professor): cria um
+  /// exercício NOVO dele e, se o modelo tem foto, copia o arquivo para a pasta
+  /// dele. Se algo falhar no meio, a foto copiada é apagada (não sobra lixo).
+  Future<void> copiarModelo(Exercise modelo) async {
+    final meuId = _client.auth.currentUser?.id;
+    if (meuId == null) {
+      throw const AppException('Sua sessão expirou. Entre novamente.');
+    }
+
+    String? novaFoto;
+    final origem = modelo.fotoPath;
+    if (origem != null && origem.isNotEmpty) {
+      final bytes = await _client.storage.from('exercicios').download(origem);
+      final nomeArquivo = origem.toLowerCase();
+      final tipo = nomeArquivo.endsWith('.png')
+          ? 'image/png'
+          : nomeArquivo.endsWith('.webp')
+              ? 'image/webp'
+              : 'image/jpeg';
+      novaFoto = await enviarFoto(bytes: bytes, contentType: tipo);
+    }
+
+    try {
+      await criarExercicio(
+        nome: modelo.nome,
+        grupoMuscular: modelo.grupoMuscular,
+        donoId: meuId,
+        descricao: modelo.descricao,
+        fotoPath: novaFoto,
+      );
+    } catch (_) {
+      if (novaFoto != null) await removerFoto(novaFoto);
+      rethrow;
+    }
+  }
+
   /// Exercícios que podem entrar no treino deste aluno: os da biblioteca do
   /// professor dele + os que ele já usa (assim, ao mudar de professor, nada quebra).
   Future<List<Exercise>> listarExerciciosDoAluno(String alunoId) async {

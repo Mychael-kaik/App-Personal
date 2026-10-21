@@ -290,7 +290,7 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
                   initialValue: _donoEscolhido,
                   isExpanded: true,
                   decoration: InputDecoration(
-                    labelText: 'Biblioteca de qual professor?',
+                    labelText: 'Biblioteca de quem?',
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -298,6 +298,13 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
                     ),
                   ),
                   items: [
+                    // A biblioteca do próprio administrador é a biblioteca-modelo:
+                    // todos os professores podem ver e copiar esses exercícios.
+                    if (ref.watch(currentProfileProvider) != null)
+                      DropdownMenuItem(
+                        value: ref.watch(currentProfileProvider)!.id,
+                        child: const Text('Biblioteca-modelo (todos os professores)'),
+                      ),
                     for (final p in ref.watch(professoresProvider).value ??
                         const <Profile>[])
                       DropdownMenuItem(value: p.id, child: Text(p.nome)),
@@ -306,7 +313,7 @@ class _ExerciseSheetState extends ConsumerState<ExerciseSheet> {
                       ? null
                       : (v) => setState(() => _donoEscolhido = v),
                   validator: (v) =>
-                      v == null ? 'Escolha o professor dono da biblioteca.' : null,
+                      v == null ? 'Escolha de quem é a biblioteca.' : null,
                 ),
                 const SizedBox(height: 16),
               ],

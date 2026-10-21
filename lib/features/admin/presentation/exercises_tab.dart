@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/mensagens.dart';
+import '../../../core/rotas.dart';
 import '../../../core/widgets/estados.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../data/admin_providers.dart';
@@ -64,13 +66,20 @@ class _ExercisesTabState extends ConsumerState<ExercisesTab> {
         mensagem: mensagemDeErro(erro),
         onTentarNovamente: () => ref.invalidate(exerciciosProvider),
       ),
-      data: (lista) {
+      data: (todos) {
+        // O professor também recebe os modelos do administrador (só leitura):
+        // aqui mostramos apenas a biblioteca DELE. Os modelos ficam na tela própria.
+        final meuId = ref.watch(currentProfileProvider)?.id;
+        final lista = euAdmin
+            ? todos
+            : todos.where((e) => e.donoId == meuId).toList();
         if (lista.isEmpty) {
-          return const EstadoVazio(
+          return EstadoVazio(
             icone: Icons.fitness_center,
             titulo: 'Biblioteca vazia',
             mensagem:
-                'Cadastre os exercícios que você usa nos treinos. Toque em "Novo exercício".',
+                'Cadastre os exercícios que você usa nos treinos. Toque em "Novo exercício"'
+                '${euAdmin ? '.' : ' ou copie da biblioteca-modelo (ícone no alto).'}',
           );
         }
 
@@ -133,7 +142,7 @@ class _ExercisesTabState extends ConsumerState<ExercisesTab> {
                                 ? e.grupoMuscular
                                 : '${e.grupoMuscular} · $descricao',
                             if (euAdmin)
-                              'Biblioteca: ${nomesDosProfessores[e.donoId] ?? 'Administrador geral'}',
+                              'Biblioteca: ${nomesDosProfessores[e.donoId] ?? 'modelo (administrador)'}',
                           ].join('\n'),
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,

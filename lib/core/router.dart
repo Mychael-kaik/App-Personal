@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/admin/presentation/admin_home_page.dart';
+import '../features/admin/presentation/modelos_page.dart';
 import '../features/admin/presentation/student_detail_page.dart';
 import '../features/admin/presentation/student_form_page.dart';
 import '../features/admin/presentation/workout_editor_page.dart';
@@ -113,6 +114,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'professor/novo',
             builder: (context, state) =>
                 const StudentFormPage(tipo: Perfil.professor),
+          ),
+          // Biblioteca-modelo: o professor copia exercícios para a sua biblioteca.
+          GoRoute(
+            path: 'modelos',
+            builder: (context, state) => const ModelosPage(),
           ),
           GoRoute(
             path: 'aluno/:id',

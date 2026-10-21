@@ -125,6 +125,12 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
               icon: const Icon(Icons.refresh),
               onPressed: () => ref.invalidate(painelDeHojeProvider),
             ),
+          if (atual.chave == 'exercicios' && !ehAdmin)
+            IconButton(
+              tooltip: 'Biblioteca-modelo',
+              icon: const Icon(Icons.collections_bookmark_outlined),
+              onPressed: () => context.push(Rotas.modelos),
+            ),
           if (atual.chave == 'painel')
             IconButton(
               tooltip: 'Atualizar',

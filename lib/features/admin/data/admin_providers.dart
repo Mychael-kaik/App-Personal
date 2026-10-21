@@ -37,6 +37,11 @@ final exerciciosProvider = FutureProvider.autoDispose<List<Exercise>>((ref) {
   return ref.watch(adminRepositoryProvider).listarExercicios();
 });
 
+/// Biblioteca-modelo (exercícios do administrador geral, para copiar).
+final modelosProvider = FutureProvider.autoDispose<List<Exercise>>((ref) {
+  return ref.watch(adminRepositoryProvider).listarModelos();
+});
+
 /// Treinos de um aluno (todos os dias da semana).
 final treinosDoAlunoProvider =
     FutureProvider.autoDispose.family<List<Workout>, String>((ref, alunoId) {

@@ -17,6 +17,7 @@ class Rotas {
   // protegidas pela mesma regra de redirecionamento).
   static const alunoNovo = '/admin/aluno/novo';
   static const professorNovo = '/admin/professor/novo';
+  static const modelos = '/admin/modelos';
   static String alunoDetalhe(String id) => '/admin/aluno/$id';
   static String alunoEditar(String id) => '/admin/aluno/$id/editar';
   static String alunoProgresso(String id) => '/admin/aluno/$id/progresso';
